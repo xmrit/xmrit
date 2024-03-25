@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang='en-gb'>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="HandheldFriendly" content="True" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="canonical" href="https://xmrit.com/t/">
+    <title>  XmR tool | Xmrit by Commoncog </title>
+    
+    
+    
+    
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+
+    <link rel="icon" href="https://xmrit.com/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://xmrit.com/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://xmrit.com/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://xmrit.com/favicon-16x16.png">
+    <link rel="manifest" href="https://xmrit.com/site.webmanifest"><meta property="og:title" content="XmR tool" />
+<meta property="og:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://xmrit.com/t/" />
+<meta itemprop="name" content="XmR tool">
+<meta itemprop="description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="XmR tool"/>
+<meta name="twitter:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."/>
+</head>
+  <body class='max-w-screen-2xl mx-auto'><header class="col-span-12 pt-3 px-4 border-b pb-5 mb-5 border-slate-400">
+  <div class="flex flex-col md:flex-row items-center justify-between">
+    <a class='flex items-center' href="/"><img class="w-16 h-16 mr-1" src="https://xmrit.com/xmrit-logo.png"/>
+    <div class="flex flex-col justify-start">
+      <h1 class="text-4xl font-sans font-bold tracking-tight text-gray-700">Xmrit</h1> 
+      <h3 class="text-sm font-sans -mt-1 italic">by Commoncog</h3>
+    </div>
+    </a>
+
+    <nav class="mt-5 md:mt-0">
+      <a class="px-2 md:px-4 py-3 hover:text-blue-700" href="https://xmrit.com/manual/">User Manual</a>
+      
+      <a class="px-2 md:px-4 py-3 text-white bg-blue-800 hover:bg-blue-700 rounded-lg" href="https://xmrit.com/about/">What is This?</a>
+      
+      
+    </nav>
+  </div>
+</header>
+<main class='relative bg-white'>
+    <section class='grid grid-cols-12 grid-flow-row gap-1 md:gap-2 px-2 sm:px-6 mx-auto'>
+        
+<div class="col-span-12 order-2 md:order-none flex flex-row items-end md:items-start md:col-span-4 lg:col-span-3 xl:col-span-2 px-2 md:mb-0">
+  <button class="px-4 py-2 text-white bg-blue-700 hover:bg-blue-600 rounded-lg font-normal" id="refresh-charts" type="button">Refresh Charts</button>
+</div>
+<div class="col-span-12 order-3 md:order-none md:col-span-6 xl:col-span-7 px-2">
+  <div class="border border-gray-400 p-2 rounded-xl hidden">
+    <label class="mb-2 text-sm font-medium text-gray-900 hover:cursor-pointer" for="csv-file">Upload CSV file: </label>
+    <input class="text-sm text-slate-500 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:cursor-pointer hover:file:cursor-pointer hover:file:bg-blue-200" type="file" id="csv-file" accept=".csv">
+  </div>
+
+  <button class="px-4 py-2 text-white bg-slate-700 hover:bg-slate-600 rounded-lg font-normal" id="lock-limit-btn" type="button">Lock Limits</button>
+  <button class="text-slate-500 px-2 hidden lock-limit-remove">Remove Limits</button>
+  <button class="py-2 px-2 text-blue-800 hover:text-blue-600 font-normal" id="download-data" type="button">Download Data</button>
+  <dialog id="lock-limit-dialog" class="p-6 overflow-y-auto bg-white rounded-xl shadow-xl max-w-prose">
+    <div class="pb-2">
+      <button class="text-red-500 pr-2" id="lock-limit-close">Close</button>
+      <button class="text-slate-500 pr-2 hidden lock-limit-remove">Remove Limits</button>
+      <button class="px-4 py-2 text-white bg-blue-700 hover:bg-blue-600 rounded-lg font-normal" id="lock-limit-add" type="button">Lock Limits</button>
+    </div>
+    <p> Modify your routine variation data in the table or set the limit lines directly below. In case of conflict, the latter wins. </p>
+    <p class="font-semibold text-red-600 hidden" id="lock-limit-warning">Since locked lines is currently active, limit lines in the inputs might differ from the table data calculation</p>
+    <div class="flex flex-wrap">
+      <div class="pr-2 py-2">
+        <label class="block text-sm font-medium leading-6 text-gray-900">Avg X</label>
+        <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="avgX" placeholder="Enter the limit">
+      </div>
+      <div class="pr-2 py-2">
+        <label class="block text-sm font-medium leading-6 text-gray-900">Upper X Limit (UNPL)</label>
+        <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="UNPL" placeholder="Enter the limit">
+        </div>
+      <div class="pr-2 py-2">
+        <label class="block text-sm font-medium leading-6 text-gray-900">Lower X Limit (LNPL)</label>
+        <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="LNPL" placeholder="Enter the limit">
+      </div>
+      <div class="pr-2 py-2">
+        <label class="block text-sm font-medium leading-6 text-gray-900">Avg Movement</label>
+        <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="avgMovement" placeholder="Enter the limit">
+      </div>
+      <div class="pr-2 py-2">
+        <label class="block text-sm font-medium leading-6 text-gray-900">Upper Movement Limit (URL)</label>
+        <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="URL" placeholder="Enter the limit">
+      </div>
+    </div>
+    <div id="lock-limit-dataTable"></div>
+  </dialog>
+  <a class="text-slate-600 p-2 hover:text-slate-800" href="#instructions">Instructions &darr;</a>
+</div>
+<div class="col-span-12 order-4 md:order-none md:col-span-2 lg:col-span-3 flex flex-row items-start md:flex-row-reverse">
+  <button class="flex items-center justify-center px-4 py-2 text-blue-800 hover:text-blue-600 font-normal" id="share-link" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+    </svg>&nbsp;Share Link</button>
+    <div class="px-4 py-2 tracking-tight text-green-600 hidden" id="data-copied-msg">Link copied to clipboard</div>
+</div>
+<div class="col-span-12 order-1 md:order-none px-2">
+  <div id="file-error" class="text-red-500 font-bold hidden"></div>
+  <div class="bg-red-50 border border-red-300 md:hidden rounded-lg p-3 mb-3">
+    <p>XmRit! isn’t built for mobile use. Some functionality is degraded. For the full experience, load this on a tablet or computer.</p>
+  </div>
+</div>
+<div class="col-span-12 order-5 md:order-none md:col-span-4 lg:col-span-3 xl:col-span-2 px-2">
+  <p class="text-sm lg:text-xs">
+    Edit your data below. Right click for more options. 
+    <span class="text-red-600 text-sm lg:text-xs hidden" id="data-table-error">Dates should be in YYYY-MM-DD format (if copying from Excel, change date format settings!). </span>
+    <span class="font-semibold text-sm lg:text-xs hidden" id="duplicate-data-warning">Duplicate data detected in the table, results might be inaccurate. </p>
+  </p>
+  <div id="dataTable" class='lg:mt-2'></div>
+</div>
+<div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 px-2">
+  <div class="flex flex-wrap lg:flex-nowrap gap-2 overflow-scroll">
+    <div id="xplot-div" class="my-2 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
+      <div id="xplot"></div>
+      <div class='flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100'>
+        <button class="flex items-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="export-xplot" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
+          </svg>
+          &nbsp;Image
+        </button>
+        <button class="ml-2 px-1 md:px-3 text-sm md:text-md text-blue-800 rounded font-normal" id="add-divider" type="button">Add divider</button>
+        <button class="px-1 md:px-3 text-sm md:text-md text-blue-800 rounded font-normal" id="remove-divider" type="button">Remove divider</button>
+      </div>
+    </div>
+    <div id="mrplot-div" class="my-2 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
+      <div id="mrplot"></div>
+      <div class="flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100">
+        <button class="flex items-center justify-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="export-mrplot" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" /></svg>&nbsp;Image
+        </button>
+      </div>
+    </div>
+  </div>      
+</div>
+<div class="col-span-12 order-last mt-16 px-2 pb-10">
+  <div class="border-blue-300 border bg-sky-50 rounded-lg px-2 py-4 grid grid-cols-4 grid-flow-row">
+    <div class="col-span-4 md:col-span-2 prose p-2">
+      <h2 class='text-lg font-semibold' id="instructions">Quick Instructions</h2>
+      <ol>
+        <li>Paste and/or edit some data into the table.</li>
+        <li>Create a link to share charts with others, or download the charts as images.</li>
+        <li><em>Optional:</em> Add and adjust <strong>dividers</strong>, or edit <strong>table headers</strong> to update chart axis labels.</li>
+        <li>The full user manual is <a href="/manual/">available here</a>.</li>
+      </ol>
+    </div>  
+    <div class="col-span-4 md:col-span-2 prose p-2">
+      <h2 class='text-lg font-semibold'>Privacy Notice</h2>
+      <p>XmRit is 100% browser based and obsessed about protecting your privacy. None of your data is ever sent to our servers. <a href="/privacy/">Read the full privacy policy here</a>.</p>
+      <h2 class='text-lg font-semibold'>Have feedback?</h2>
+      <p>Shoot us an <a href="mailto:feedback@xmrit.com?subject=Feedback on XmRit">email</a>. We'd love to hear from you!</p>
+    </div>
+  </div>
+</div>
+
+    </section>
+    </main><footer class="col-span-12 pt-8 px-4 border-t pb-5 mb-5 border-slate-400">
+  <div class="flex flex-col md:flex-row items-start justify-between">
+    <p class="text-gray-500 order-last md:order-first"><a class="hover:text-gray-800" href="/">Xmrit</a> by <a class="hover:text-purple-600" href="https://commoncog.com">Commoncog</a> &copy; 2024 // <br/> <a class="hover:text-gray-800" href="https://postcognito.com">Postcognito Pte Ltd</a></p>
+  <nav class="mb-5 md:mb-0 flex flex-col md:flex-row">
+    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="mailto:feedback@xmrit.com?subject=Feedback on Xmrit">Send Feedback</a>
+    <a class="text-gray-500 hover:text-gray-800 my-1 md:my-0" href="https://xmrit.com/privacy/">Privacy Policy</a>
+  </nav>
+  </div>
+</footer>
+
+
+
+<script type="module" src="/js/main2.js" integrity=""></script>
+
+  </body>
+</html>
+
