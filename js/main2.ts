@@ -412,11 +412,28 @@ function addDividerLine() {
   renderDividerLine(dividerLine)
 }
 
+// redrawDividerButtons style "add/remove divider" buttons
+function redrawDividerButtons() {
+  if (state.dividerLines.length > 2) {
+    document.querySelector('#remove-divider').classList.remove('text-slate-400')
+  } else {
+    document.querySelector('#remove-divider').classList.add('text-slate-400')
+  }
+  if (state.dividerLines.length < 5) {
+    document.querySelector('#add-divider').classList.remove('bg-slate-700')
+    document.querySelector('#add-divider').classList.remove('hover:bg-slate-600')
+  } else {
+    document.querySelector('#add-divider').classList.add('bg-slate-700')
+    document.querySelector('#add-divider').classList.add('hover:bg-slate-600')
+  }
+}
+
 function redraw(immediately: boolean = true): _Stats {
   let stats = wrangleData()
   // it is important that we render the series first before limit lines
   renderSeries(stats, immediately)
   renderLimitLines(stats, immediately)
+  redrawDividerButtons()
   // let url = generateShareLink()
   // if (url.length <= MAX_LINK_LENGTH) {
   //   // store state in url if data is not too big

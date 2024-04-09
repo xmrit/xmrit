@@ -33,15 +33,15 @@
   <div class="flex flex-col md:flex-row items-center justify-between">
     <a class='flex items-center' href="/"><img class="w-16 h-16 mr-1" src="https://xmrit.com/xmrit-logo.png"/>
     <div class="flex flex-col justify-start">
-      <h1 class="text-4xl font-sans font-bold tracking-tight text-gray-700">Xmrit</h1> 
-      <h3 class="text-sm font-sans -mt-1 italic">by Commoncog</h3>
+      <h1 class="text-2xl md:text-4xl font-sans font-bold tracking-tight text-gray-700">Xmrit</h1> 
+      <h3 class="text-xs md:text-sm font-sans -mt-1 italic">by Commoncog</h3>
     </div>
     </a>
 
-    <nav class="mt-5 md:mt-0">
+    <nav class="mt-5 md:mt-0 text-sm md:text-base">
       <a class="px-2 md:px-4 py-3 hover:text-blue-700" href="https://xmrit.com/manual/">User Manual</a>
       
-      <a class="px-2 md:px-4 py-3 text-white bg-blue-800 hover:bg-blue-700 rounded-lg" href="https://xmrit.com/about/">What is This?</a>
+      <a class="px-2 md:px-4 py-3 text-white bg-slate-800 hover:bg-blue-700 rounded-lg" href="https://xmrit.com/about/">What is This?</a>
       
       
     </nav>
@@ -121,20 +121,20 @@
     <div id="xplot-div" class="my-2 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
       <div id="xplot"></div>
       <div class='flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100'>
-        <button class="flex items-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="export-xplot" type="button">
+        <button class="px-1 md:px-3 my-2 md:my-3 mr-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="add-divider" type="button">Add Divider</button>
+        <button class="px-1 md:px-3 text-sm md:text-md text-blue-800 text-slate-400 font-normal" id="remove-divider" type="button">Remove Divider</button>
+        <button class="flex items-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-blue-800 rounded-lg font-normal" id="export-xplot" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
           </svg>
           &nbsp;Image
         </button>
-        <button class="ml-2 px-1 md:px-3 text-sm md:text-md text-blue-800 rounded font-normal" id="add-divider" type="button">Add divider</button>
-        <button class="px-1 md:px-3 text-sm md:text-md text-blue-800 rounded font-normal" id="remove-divider" type="button">Remove divider</button>
       </div>
     </div>
     <div id="mrplot-div" class="my-2 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
       <div id="mrplot"></div>
       <div class="flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100">
-        <button class="flex items-center justify-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="export-mrplot" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
+        <button class="flex items-center justify-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-blue-800 rounded-lg font-normal" id="export-mrplot" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" /></svg>&nbsp;Image
         </button>
       </div>
@@ -154,9 +154,9 @@
     </div>  
     <div class="col-span-4 md:col-span-2 prose p-2">
       <h2 class='text-lg font-semibold'>Privacy Notice</h2>
-      <p>XmRit is 100% browser based and obsessed about protecting your privacy. None of your data is ever sent to our servers. <a href="/privacy/">Read the full privacy policy here</a>.</p>
+      <p>XmRit is 100% browser based and obsessed about protecting your privacy. Your data is never sent to our servers. <a href="/privacy/">Read the full privacy policy</a> for details on analytics tracking.</p>
       <h2 class='text-lg font-semibold'>Have feedback?</h2>
-      <p>Shoot us an <a href="mailto:feedback@xmrit.com?subject=Feedback on XmRit">email</a>. We'd love to hear from you!</p>
+      <p>Send us feedback <a href="https://forms.gle/93hdRwdjJYDxnvSx5" target="_blank">here</a>. We'd love to hear from you!</p>
     </div>
   </div>
 </div>
@@ -166,7 +166,8 @@
   <div class="flex flex-col md:flex-row items-start justify-between">
     <p class="text-gray-500 order-last md:order-first"><a class="hover:text-gray-800" href="/">Xmrit</a> by <a class="hover:text-purple-600" href="https://commoncog.com">Commoncog</a> &copy; 2024 // <br/> <a class="hover:text-gray-800" href="https://postcognito.com">Postcognito Pte Ltd</a></p>
   <nav class="mb-5 md:mb-0 flex flex-col md:flex-row">
-    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="mailto:feedback@xmrit.com?subject=Feedback on Xmrit">Send Feedback</a>
+    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="/integration/">Integration</a>
+    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="https://forms.gle/93hdRwdjJYDxnvSx5">Send Feedback</a>
     <a class="text-gray-500 hover:text-gray-800 my-1 md:my-0" href="https://xmrit.com/privacy/">Privacy Policy</a>
   </nav>
   </div>
