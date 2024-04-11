@@ -11,7 +11,7 @@ Exporting.default(Highcharts);
 OfflineExporting.default(Highcharts);
 Annotation.default(Highcharts);
 
-/** 
+/**
  * Typescript type and interface definitions
  */
 
@@ -110,7 +110,7 @@ type _Stats = {
   movementsPerRange: DataValue[][]
 }
 
-/** 
+/**
  * Global constants and variables
  */
 const MAX_LINK_LENGTH = 2000; // 2000 characters in url
@@ -133,7 +133,7 @@ const state = {
   xLabel: "Date",
   yLabel: "Value",
 
-  // xdata, movements are bound to the charts. 
+  // xdata, movements are bound to the charts.
   // So, all update must be done in place (e.g. use updateInPlace) to maintain reactiveness.
   xdata: [] as DataValue[], // data passed to plot(...). Will not contain null values.
   movements: [] as DataValue[],
@@ -265,7 +265,7 @@ function toLineSeriesObject(range): Highcharts.SeriesOptionsType {
   }
 }
 
-/** 
+/**
  * Sets the xplot and mrplot global variable. Will only set once.
  */
 function createPlots(xChartSelector: string, mrChartSelector: string) {
@@ -386,7 +386,7 @@ function translateToSeriesData(d: DataValue[][]) {
 
 /**
  * Add a new divider line to the chart
- * @returns 
+ * @returns
  */
 function addDividerLine() {
   // checks if limit of divider lines is reached
@@ -488,7 +488,7 @@ function renderDividerLine(dividerLine: DividerType) {
         // It should be large enough for most purposes.
         // This is definitely a hack :) to make this annotation looks like a plotLine
         //
-        // An alternative is to implement the dividerLine using Highcharts.plotLines, 
+        // An alternative is to implement the dividerLine using Highcharts.plotLines,
         // but that would require us to implement the drag-and-drop logic for the plotline
         // Another alternative is to keep extending the yAxis max and min based on the data,
         // but that would require us to carefully update it on every `afterUpdate` (avoiding infinite loop)
@@ -510,7 +510,7 @@ function renderDividerLine(dividerLine: DividerType) {
 /**
  * renderLimitLines have a side effect of setting the chart yAxis extremes
  * renderLimitLines depends on the xAxis extremes being set correctly. Hence it must be called after renderSeries
- * @param stats 
+ * @param stats
  * @param redraw whether to redraw. defaults to true
  */
 function renderLimitLines(stats: _Stats, redraw: boolean = true): void {
@@ -527,8 +527,8 @@ function renderLimitLines(stats: _Stats, redraw: boolean = true): void {
   for (let i = 0; i < stats.lineValues.length; i++) {
     let lv = stats.lineValues[i]
     if (i == stats.lineValues.length - 1) {
-      // try to extend the limit lines a bit after the last data point. We add minimum 1-day worth of x 
-      // this change is purely for rendering purposes, not logical change. 
+      // try to extend the limit lines a bit after the last data point. We add minimum 1-day worth of x
+      // this change is purely for rendering purposes, not logical change.
       // There is no reason for the math or for the number 5 aside from it looks good on a few data I tried on (daily, weekly, monthly)
       lv.xRight = lv.xRight + Math.max(86400 * 1000, (Math.min(xplot.xAxis[0].max, mrplot.xAxis[0].max) - lv.xRight) / 5)
     }
@@ -724,7 +724,7 @@ function wrangleData(): _Stats {
     stats.mrchartMax = Math.max(stats.mrchartMax, URL)
 
     // check for process exceptions
-    // 
+    //
     // We need to first reset all status to normal first before calculating
     // to prevent cached status from previous checks
     filteredXdata.forEach(dv => dv.status = DataStatus.NORMAL)
@@ -931,12 +931,14 @@ function registerYAxisTitleChangeListener() {
 
 // LOGIC ON PAGE LOAD
 document.addEventListener("DOMContentLoaded", function (_e) {
-  const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.has('d')) {
+  if (window.location.hash)
+  {
+    const urlParams = new URLSearchParams(window.location.search)
+    const hashParams = new URLSearchParams(window.location.hash.slice(1))
     let version = urlParams.get('v') || '1';
-    let separator = urlParams.get('s') || '';
-    let ll = urlParams.get('l') || '';
-    let { xLabel, yLabel, data, dividerLines, lockedLimits, lockedLimitStatus } = decodeEncodedTable(version, urlParams.get('d')!, separator, ll);
+    let separator = hashParams.get('s') || '';
+    let ll = hashParams.get('l') || '';
+    let { xLabel, yLabel, data, dividerLines, lockedLimits, lockedLimitStatus } = decodeEncodedTable(version, hashParams.get('d')!, separator, ll);
     state.xLabel = xLabel
     state.yLabel = yLabel
     state.tableData = data
@@ -967,13 +969,13 @@ document.addEventListener("DOMContentLoaded", function (_e) {
   // export chart logic
   document.querySelector('#export-xplot').addEventListener('click', () => {
     // To fix an edgecase where old limit lines are still around when user exports the chart eventhough it doesn't show up in the displayed chart.
-    // This edgecase is easier to reproduce if you modify the data after switching the tab to background for a while. 
+    // This edgecase is easier to reproduce if you modify the data after switching the tab to background for a while.
     renderCharts()
     xplot.exportChartLocal({ filename: 'xplot' })
   });
   document.querySelector('#export-mrplot').addEventListener('click', () => {
     // To fix an edgecase where old limit lines are still around when user exports the chart eventhough it doesn't show up in the displayed chart.
-    // This edgecase is easier to reproduce if you modify the data after switching the tab to background for a while. 
+    // This edgecase is easier to reproduce if you modify the data after switching the tab to background for a while.
     renderCharts()
     mrplot.exportChartLocal({ filename: 'mrplot' })
   });
@@ -1014,7 +1016,7 @@ document.addEventListener("DOMContentLoaded", function (_e) {
     dialog.close()
   }))
   document.querySelector('#lock-limit-add').addEventListener("click", (e) => {
-    let lv = calculateLockedLimits(); // calculate locked limits from the table   
+    let lv = calculateLockedLimits(); // calculate locked limits from the table
     let obj = structuredClone(INACTIVE_LOCKED_LIMITS);
     document.querySelectorAll('.lock-limit-input').forEach((el: HTMLInputElement) => {
       obj[el.dataset.limit] = el.value !== '' ? Number(el.value) : lv[el.dataset.limit]
@@ -1055,7 +1057,7 @@ document.addEventListener("DOMContentLoaded", function (_e) {
       {
         data: 'x', type: 'date', dateFormat: 'YYYY-MM-DD', validator: (value, callback) => {
           if (!value) {
-            // if null, "", or undefined 
+            // if null, "", or undefined
             callback(true)
             return
           }
@@ -1218,7 +1220,7 @@ document.addEventListener("DOMContentLoaded", function (_e) {
       {
         data: 'x', type: 'date', dateFormat: 'YYYY-MM-DD', validator: (value, callback) => {
           if (!value) {
-            // if null, "", or undefined 
+            // if null, "", or undefined
             callback(true)
             return
           }
@@ -1339,7 +1341,7 @@ function calculateLockedLimits() {
  * @param updateInputValue whether to update the value of the inputs
  */
 function setLockedLimitInputs(updateInputValue: boolean) {
-  let lv = calculateLockedLimits(); // calculate locked limits from the table   
+  let lv = calculateLockedLimits(); // calculate locked limits from the table
   document.querySelectorAll('.lock-limit-input').forEach((el: HTMLInputElement) => {
     el.value = updateInputValue ? lv[el.dataset.limit] : state.lockedLimits[el.dataset.limit]
   })
@@ -1371,7 +1373,7 @@ function autofillTable(selectionData, sourceRange, targetRange, direction) {
 
   // most likely, the user is trying to extend the current pattern.
   // if there is a pattern, we will try to extend the pattern
-  // otherwise we will just use default behaviour. 
+  // otherwise we will just use default behaviour.
   let dateArray = selectionData.map(x => new Date(fromDateStr(x[0])))
   let difference = 86400000; // one day
   if (dateArray.length >= 2) {
@@ -1581,7 +1583,7 @@ function decodeNumberArrayString(s: string) {
  * - d: lz77.compress(xLabel,yLabel,date-cols...).base64(float32array of value-cols).
  * - l: float32array of [avgX, avgMovement, LNPL, UNPL, URL, lockedLimitStatus]
  * - s: float32array of dividers x values (unix timestamp in milliseconds)
- * @returns 
+ * @returns
  */
 function generateShareLink(s: {
   xLabel: string,
@@ -1620,20 +1622,23 @@ function generateShareLink(s: {
     }
   }).join(",")
   const valueText = validXdata.map((d) => round(d.value))
-  paramsObj['d'] = btoaUrlSafe(lz77.compress(dateText)) + '.' + encodeNumberArrayString(valueText)
+  const hashParamsObj = {
+    d: btoaUrlSafe(lz77.compress(dateText)) + '.' + encodeNumberArrayString(valueText)
+  };
   if (s.dividerLines) {
     const dividers = encodeNumberArrayString(s.dividerLines.filter(dl => !isShadowDividerLine(dl)).map(dl => dl.x))
     if (dividers.length > 0) {
-      paramsObj['s'] = dividers
+      hashParamsObj['s'] = dividers
     }
   }
   if (s.lockedLimits && (s.lockedLimitStatus & LockedLimitStatus.LOCKED) == 1) {
     // IMPORTANT: If you change the number array below in any way except appending to it, please bump up the version number ('v') as it will break all existing links
     // and update the decoding logic below
-    paramsObj['l'] = encodeNumberArrayString([s.lockedLimits.avgX, s.lockedLimits.avgMovement, s.lockedLimits.LNPL, s.lockedLimits.UNPL, s.lockedLimits.URL, s.lockedLimitStatus])
+    hashParamsObj['l'] = encodeNumberArrayString([s.lockedLimits.avgX, s.lockedLimits.avgMovement, s.lockedLimits.LNPL, s.lockedLimits.UNPL, s.lockedLimits.URL, s.lockedLimitStatus])
   }
   const searchParams = new URLSearchParams(paramsObj);
-  const fullPath = `${window.location.origin}${window.location.pathname}?${searchParams.toString()}`
+  const hashParams = new URLSearchParams(hashParamsObj);
+  const fullPath = `${window.location.origin}${window.location.pathname}?${searchParams.toString()}#${hashParams.toString()}`
   return fullPath
 }
 
@@ -1696,8 +1701,8 @@ const yAxisTitle = (newColName) => `<div class="axis-label-y">${newColName}</div
 
 /**
  * Find the extremes on the x-axis
- * @param arr 
- * @returns 
+ * @param arr
+ * @returns
  */
 function findExtremesX(arr: DataValue[]) {
   let min = Infinity
