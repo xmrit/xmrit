@@ -6,10 +6,8 @@ A live version of the tool is available at http://xmrit.com/t/ . You can find mo
 
 ## Getting Started
 
-We provide a minified `/dist` directory file to simplify running this tool.
-
-1. [Clone or download this repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
-2. Start a local http server from the `/dist` directory
+1. [Download the latest release](https://github.com/xmrit/xmrit/releases).
+2. Start a local http server from the directory
   - We assume you have python installed
     ```
     python -m http.server 5000
