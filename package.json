@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "start": "parcel index.html",
+    "build": "parcel build index.html --no-content-hash"
+  },
+  "devDependencies": {
+    "parcel": "^2.12.0"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.10",
+    "handsontable": "^14.3.0",
+    "highcharts": "^11.4.1",
+    "typescript": "^5.4.5"
+  }
+}
