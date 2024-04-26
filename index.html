@@ -23,9 +23,11 @@
     <link rel="manifest" href="https://xmrit.com/site.webmanifest"><meta property="og:title" content="XmR tool" />
 <meta property="og:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://xmrit.com/t/" />
+<meta property="og:url" content="https://xmrit.com/t/" /><meta property="og:image" content="https://xmrit.com/sample_xmr.png"/>
 <meta itemprop="name" content="XmR tool">
-<meta itemprop="description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."><meta name="twitter:card" content="summary"/>
+<meta itemprop="description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."><meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://xmrit.com/sample_xmr.png"/>
+
 <meta name="twitter:title" content="XmR tool"/>
 <meta name="twitter:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."/>
 </head>
@@ -95,6 +97,10 @@
     <div id="lock-limit-dataTable"></div>
   </dialog>
   <a class="text-slate-600 p-2 hover:text-slate-800" href="#instructions">Instructions &darr;</a>
+  <div class="inline-block hidden p-2" id="toolbar">
+    <label class="mr-2">Zoom?</label>
+    <input type="checkbox" id="toolbar-zoom"/>
+  </div>
 </div>
 <div class="col-span-12 order-4 md:order-none md:col-span-2 lg:col-span-3 flex flex-row items-start md:flex-row-reverse">
   <button class="flex items-center justify-center px-4 py-2 text-blue-800 hover:text-blue-600 font-normal" id="share-link" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">

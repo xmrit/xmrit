@@ -270,15 +270,12 @@ function toLineSeriesObject(range): Highcharts.SeriesOptionsType {
  */
 function createPlots(xChartSelector: string, mrChartSelector: string) {
   function createPlot(selector: string, data: DataValue[][]): Highcharts.Chart {
-    return Highcharts.chart(selector, {
+    let options : Highcharts.Options = {
       chart: {
         type: 'line',
         scrollablePlotArea: {
           minWidth: 600
         },
-        // zooming: {
-        //   type: "y",
-        // },
         plotBackgroundImage: '../xmrit-bg.png',
       },
       time: {
@@ -311,6 +308,16 @@ function createPlots(xChartSelector: string, mrChartSelector: string) {
           text: state.xLabel,
         },
         maxPadding: 0.2, // space on the right end of xAxis to give space for labels
+        events: {
+          setExtremes: function (e) {
+            // https://api.highcharts.com/highcharts/xAxis.events.setExtremes
+            if (e.trigger === 'zoom' && !e.min && !e.max) {
+              // When user click "reset zoom", we re-render the whole chart to make sure the limits are on display
+              // here we use a setTimeout to very quickly override the initial zoom behaviour
+              setTimeout(redraw, 1)
+            }
+          }
+        },
       },
       legend: {
         enabled: false,
@@ -328,7 +335,9 @@ function createPlots(xChartSelector: string, mrChartSelector: string) {
         fallbackToExportServer: false,
         allowHTML: true,
       }
-    });
+    }
+
+    return Highcharts.chart(selector, options);
   }
 
   // setup initial data
@@ -929,23 +938,23 @@ function registerYAxisTitleChangeListener() {
   document.querySelectorAll(".plot-title").forEach(el => el.addEventListener("click", listener))
 }
 
-function createPageParams(): URLSearchParams {
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.has('d')) {
-        return urlParams;
-    }
-    const hashParams = new URLSearchParams(window.location.hash.slice(1)); // Remove '#' character
-    return hashParams;
+function extractDataFromUrl(): URLSearchParams {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('d')) {
+      return urlParams;
+  }
+  const hashParams = new URLSearchParams(window.location.hash.slice(1)); // Remove '#' character
+  return hashParams;
 }
 
 // LOGIC ON PAGE LOAD
-document.addEventListener("DOMContentLoaded", function (_e) {
-  const pageParams = createPageParams();
+document.addEventListener("DOMContentLoaded", async function (_e) {
+  const pageParams = extractDataFromUrl()
   if (pageParams.has('d')) {
-    let version = pageParams.get('v') || '1';
+    let version = pageParams.get('v') || '0';
     let separator = pageParams.get('s') || '';
     let ll = pageParams.get('l') || '';
-    let { xLabel, yLabel, data, dividerLines, lockedLimits, lockedLimitStatus } = decodeEncodedTable(version, pageParams.get('d')!, separator, ll);
+    let { xLabel, yLabel, data, dividerLines, lockedLimits, lockedLimitStatus } = await decodeShareLink(version, pageParams.get('d')!, separator, ll);
     state.xLabel = xLabel
     state.yLabel = yLabel
     state.tableData = data
@@ -1612,24 +1621,32 @@ function generateShareLink(s: {
   },
   lockedLimitStatus?: number,
 }): string {
-  // Search parameters can also be an object
+  let currentUrlParams = extractDataFromUrl()
   const paramsObj = {
-    v: "0" // version
+    v: currentUrlParams.get('v') ?? "0" // get version from url or default to 0
   };
-  let validXdata = s.xdata.filter(dv => dv.x || dv.value)
-  // basically first 2 are labels, followed by date-column, followed by value-column.
-  // date-column are compressed using lz77
-  // value-column are encoded as bytearray and converted into base64 string
-  const dateText = `${s.xLabel.replace(",", ";")},${s.yLabel.replace(",", ";")},` + validXdata.map((d) => {
-    if (d.x) {
-      // hack[1]: if dates contain , e.g. "Jan 1, 2020", we replace the comma using ; instead
-      return d.x.replace(",", ";")
-    } else {
-      return ''
-    }
-  }).join(",")
-  const valueText = validXdata.map((d) => round(d.value))
-  paramsObj['d'] = btoaUrlSafe(lz77.compress(dateText)) + '.' + encodeNumberArrayString(valueText)
+
+  if (paramsObj['v'] == "1") {
+    // in sharelink version 1, we assume users don't intend to change their src data so we just copy the user's url here
+    // Otherwise, they should change the result returned from the remote url.
+    paramsObj['d'] = currentUrlParams.get('d')
+  } else {
+    let validXdata = s.xdata.filter(dv => dv.x || dv.value)
+    // basically first 2 are labels, followed by date-column, followed by value-column.
+    // date-column are compressed using lz77
+    // value-column are encoded as bytearray and converted into base64 string
+    const dateText = `${s.xLabel.replace(",", ";")},${s.yLabel.replace(",", ";")},` + validXdata.map((d) => {
+      if (d.x) {
+        // hack[1]: if dates contain , e.g. "Jan 1, 2020", we replace the comma using ; instead
+        return d.x.replace(",", ";")
+      } else {
+        return ''
+      }
+    }).join(",")
+    const valueText = validXdata.map((d) => round(d.value))
+    paramsObj['d'] = btoaUrlSafe(lz77.compress(dateText)) + '.' + encodeNumberArrayString(valueText)
+  }
+
   if (s.dividerLines) {
     const dividers = encodeNumberArrayString(s.dividerLines.filter(dl => !isShadowDividerLine(dl)).map(dl => dl.x))
     if (dividers.length > 0) {
@@ -1646,26 +1663,44 @@ function generateShareLink(s: {
   return fullPath
 }
 
-function decodeEncodedTable(version: string, encoded: string, dividers: string, limits: string) {
-  // version 0, the oldest
-  encoded = decodeURIComponent(encoded)
-  dividers = decodeURIComponent(dividers)
-  let [datePart, valuePart] = encoded.split('.', 2)
-  let dateText = lz77.decompress(atobUrlSafe(datePart))
-  let values = decodeNumberArrayString(valuePart)
-  // hack[1]: reverse the , -> ; encoding
-  let dates = dateText.split(',').map(d => d.replace(";", ","))
-  let labels = dates.splice(0, 2)
-  // sort dates based on string
-  // dates.sort((a, b) => Date.parse(a) < Date.parse(b) ? -1 : 1);
-  let data = dates.map((d, idx) => {
-    return {
-      order: idx,
-      x: d, // Date in YYYY-MM-DD format
-      value: round(values[idx]),
-      status: DataStatus.NORMAL,
-    }
-  })
+async function decodeShareLink(version: string, d: string, dividers: string, limits: string) {
+  let data = []
+  let labels = []
+  if (version == '1') {
+    // version 1. d is a remote url. We fetch labels and data from a remote url.
+    let res = await fetch(d)
+    let body = await res.json()
+    labels = [body.xLabel ?? 'Date', body.yLabel ?? 'Value']
+    data = body.xdata.map((v, idx) => {
+      return {
+        order: idx,
+        x: v['x'], // Date in YYYY-MM-DD format
+        value: round(+v['value']),
+        status: DataStatus.NORMAL,
+      }
+    })
+  } else {
+    // version 0, the oldest. d is an encoded table
+    d = decodeURIComponent(d)
+    dividers = decodeURIComponent(dividers)
+    let [datePart, valuePart] = d.split('.', 2)
+    let dateText = lz77.decompress(atobUrlSafe(datePart))
+    let values = decodeNumberArrayString(valuePart)
+    // hack[1]: reverse the , -> ; encoding
+    let dates = dateText.split(',').map(d => d.replace(";", ","))
+    labels = dates.splice(0, 2)
+    // sort dates based on string
+    // dates.sort((a, b) => Date.parse(a) < Date.parse(b) ? -1 : 1);
+    data = dates.map((d, idx) => {
+      return {
+        order: idx,
+        x: d, // Date in YYYY-MM-DD format
+        value: round(values[idx]),
+        status: DataStatus.NORMAL,
+      }
+    })
+  }
+
   let dividerLines = [] as DividerType[]
   if (dividers?.length > 0) {
     dividerLines = dividerLines.concat(decodeNumberArrayString(dividers).map((x, i) => {
@@ -1720,7 +1755,8 @@ function findExtremesX(arr: DataValue[]) {
 }
 
 function round(n: number): number {
-  return +(n.toFixed(DECIMAL_POINT))
+  let pow = 10 ** DECIMAL_POINT
+  return Math.round(n * pow) / pow
 }
 
 function isShadowDividerLine(dl: { id: string }): boolean {
