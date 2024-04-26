@@ -6,20 +6,21 @@ A live version of the tool is available at http://xmrit.com/t/ . You can find mo
 
 ## Getting Started
 
-We assume that you have [Python](https://www.python.org/) installed on your computer.
+1. [Download the latest release](https://github.com/xmrit/xmrit/releases).
+2. Start a local http server from the directory
+  - We assume you have python installed
+    ```
+    python -m http.server 5000
+    ```
+3. Now, open your browser at http://localhost:5000 and voila! You're ready to go.
 
-To get started with Xmrit, [clone or download this repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository). 
+## Contributing
 
-Once inside the folder, run the following command:
+### Development setup
 
-```
-python -m http.server 5000
-```
+The following steps will get you set up to contribute changes to this repo:
 
-Now, open your browser at http://localhost:5000 and voila! You're ready to go.
-
-## Contributing 
-
-The main entry point to the source code is `js/main2.ts`. We provide a minified `main2.js` file to simplify running this tool on your computer.
-
-To install all dependencies, run `npm i highcharts dayjs handsontable typescript`
+1. Fork the repo (Click the Fork button at the top of [this page](https://github.com/xmrit/xmrit))
+2. Clone your fork locally
+3. Install dependencies by running `npm install`
+4. Start local dev server by running `npm run start`
