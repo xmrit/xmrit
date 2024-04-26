@@ -929,14 +929,23 @@ function registerYAxisTitleChangeListener() {
   document.querySelectorAll(".plot-title").forEach(el => el.addEventListener("click", listener))
 }
 
+function createPageParams(): URLSearchParams {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.has('d')) {
+        return urlParams;
+    }
+    const hashParams = new URLSearchParams(window.location.hash.slice(1)); // Remove '#' character
+    return hashParams;
+}
+
 // LOGIC ON PAGE LOAD
 document.addEventListener("DOMContentLoaded", function (_e) {
-  const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.has('d')) {
-    let version = urlParams.get('v') || '1';
-    let separator = urlParams.get('s') || '';
-    let ll = urlParams.get('l') || '';
-    let { xLabel, yLabel, data, dividerLines, lockedLimits, lockedLimitStatus } = decodeEncodedTable(version, urlParams.get('d')!, separator, ll);
+  const pageParams = createPageParams();
+  if (pageParams.has('d')) {
+    let version = pageParams.get('v') || '1';
+    let separator = pageParams.get('s') || '';
+    let ll = pageParams.get('l') || '';
+    let { xLabel, yLabel, data, dividerLines, lockedLimits, lockedLimitStatus } = decodeEncodedTable(version, pageParams.get('d')!, separator, ll);
     state.xLabel = xLabel
     state.yLabel = yLabel
     state.tableData = data
@@ -1632,8 +1641,8 @@ function generateShareLink(s: {
     // and update the decoding logic below
     paramsObj['l'] = encodeNumberArrayString([s.lockedLimits.avgX, s.lockedLimits.avgMovement, s.lockedLimits.LNPL, s.lockedLimits.UNPL, s.lockedLimits.URL, s.lockedLimitStatus])
   }
-  const searchParams = new URLSearchParams(paramsObj);
-  const fullPath = `${window.location.origin}${window.location.pathname}?${searchParams.toString()}`
+  const pageParams = new URLSearchParams(paramsObj);
+  const fullPath = `${window.location.origin}${window.location.pathname}#${pageParams.toString()}`
   return fullPath
 }
 
