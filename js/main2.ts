@@ -1298,11 +1298,26 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
       return beforePasteTable(data, coords)
     },
     beforeChange(changes, source) {
-      let xOnly = state.xdata.map(d => d.x)
-      changes.forEach(([row, prop, oldVal, newVal]) => {
-        if (prop != 'x') return;
-        xOnly[row] = newVal
-      })
+      let xOnly = state.xdata.map(d => d.x);
+
+        changes.forEach((change, index) => {
+            if (!change) {
+                return;
+            }
+            const [row, prop, oldVal, newVal] = change;
+
+            if (prop === 'value') {
+                // remove characters from value that are not numbers or decimal points
+                let specialChars = /[^0-9.]/g;
+                let cleanY = Number(newVal.replace(specialChars, '')) || 0;
+                changes[index] = [row, prop, oldVal, cleanY];
+            }
+
+            if (prop === 'x') {
+                xOnly[row] = newVal;
+                changes[index] = [row, prop, oldVal, newVal];
+            }
+        });
       checkDuplicatesInTable(xOnly, this)
     },
     afterChange(changes, source) {
