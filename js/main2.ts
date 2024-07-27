@@ -254,7 +254,7 @@ function checkOutsideLimit(
 	upperLimit: number,
 ) {
 	let isApplied = false;
-	data.forEach((dv) => {
+	for (let dv of data) {
 		if (dv.value < lowerLimit) {
 			dv.status = DataStatus.NPL_EXCEPTION;
 			isApplied = true;
@@ -262,7 +262,7 @@ function checkOutsideLimit(
 			dv.status = DataStatus.NPL_EXCEPTION;
 			isApplied = true;
 		}
-	});
+	}
 	if (isApplied) {
 	}
 }
@@ -329,7 +329,7 @@ function createPlots(xChartSelector: string, mrChartSelector: string) {
 				},
 				maxPadding: 0.2, // space on the right end of xAxis to give space for labels
 				events: {
-					setExtremes: function (e) {
+					setExtremes: (e) => {
 						// https://api.highcharts.com/highcharts/xAxis.events.setExtremes
 						if (e.trigger === "zoom" && !e.min && !e.max) {
 							// When user click "reset zoom", we re-render the whole chart to make sure the limits are on display
@@ -533,7 +533,7 @@ function renderDividerLine(dividerLine: DividerType) {
 			id: dividerLine.id,
 			animation: { defer: 0 },
 			events: {
-				afterUpdate: function (e) {
+				afterUpdate: (e) => {
 					for (let d of state.dividerLines) {
 						if (d.line == e.target) {
 							d.x = e.target.options.shapes[0].points[0].x;
@@ -830,7 +830,9 @@ function wrangleData(): _Stats {
 		//
 		// We need to first reset all status to normal first before calculating
 		// to prevent cached status from previous checks
-		filteredXdata.forEach((dv) => (dv.status = DataStatus.NORMAL));
+		for (let dv of filteredXdata) {
+			dv.status = DataStatus.NORMAL;
+		}
 		if (i == 0 && isLockedLimitsActive()) {
 			let opts = shouldUseQuartile();
 			checkRunOfEight(filteredXdata, state.lockedLimits.avgX);
@@ -853,7 +855,9 @@ function wrangleData(): _Stats {
 		stats.xdataPerRange.push(filteredXdata);
 
 		// check for movement exceptions
-		filteredMovements.forEach((dv) => (dv.status = DataStatus.NORMAL));
+		for (let dv of filteredMovements) {
+			dv.status = DataStatus.NORMAL;
+		}
 		if (i == 0 && isLockedLimitsActive()) {
 			checkOutsideLimit(filteredMovements, 0, state.lockedLimits.URL);
 		} else {
@@ -868,19 +872,20 @@ function wrangleData(): _Stats {
 
 	// We have calculated the max of the limit lines before, now we compare with the value of each data point
 	// since some of them might be outside the limit and we want it to be in view
-	state.xdata.forEach((dv) => {
+	for (let dv of state.xdata) {
 		if (dv.value > stats.xchartMax) {
 			stats.xchartMax = dv.value;
 		}
 		if (dv.value < stats.xchartMin) {
 			stats.xchartMin = dv.value;
 		}
-	});
-	state.movements.forEach((dv) => {
+	}
+
+	for (let dv of state.movements) {
 		if (dv.value > stats.mrchartMax) {
 			stats.mrchartMax = dv.value;
 		}
-	});
+	}
 	// we now compare with the user-set locked limit lines
 	if (isLockedLimitsActive()) {
 		stats.xchartMax = Math.max(stats.xchartMax, state.lockedLimits.UNPL);
