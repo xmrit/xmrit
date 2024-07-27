@@ -1,7 +1,8 @@
 {
   "scripts": {
     "start": "parcel index.html",
-    "build": "parcel build index.html"
+    "build": "parcel build index.html",
+    "format": "npx @biomejs/biome format --write js/main2.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
