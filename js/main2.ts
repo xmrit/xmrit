@@ -15,6 +15,13 @@ Annotation.default(Highcharts);
  * Typescript type and interface definitions
  */
 
+declare global {
+  interface Window {
+    xplot: Highcharts.Chart;
+    mrplot: Highcharts.Chart;
+  }
+}
+
 type DataValue = {
   order: number,
   x: string, // Date in YYYY-MM-DD format
@@ -270,7 +277,7 @@ function toLineSeriesObject(range): Highcharts.SeriesOptionsType {
  */
 function createPlots(xChartSelector: string, mrChartSelector: string) {
   function createPlot(selector: string, data: DataValue[][]): Highcharts.Chart {
-    let options : Highcharts.Options = {
+    let options: Highcharts.Options = {
       chart: {
         type: 'line',
         scrollablePlotArea: {
@@ -307,7 +314,7 @@ function createPlots(xChartSelector: string, mrChartSelector: string) {
         title: {
           text: state.xLabel,
         },
-        maxPadding: 0.2, // space on the right end of xAxis to give space for labels
+        maxPadding: maxPadding(), // space on the right end of xAxis to give space for labels
         events: {
           setExtremes: function (e) {
             // https://api.highcharts.com/highcharts/xAxis.events.setExtremes
@@ -367,10 +374,16 @@ function createPlots(xChartSelector: string, mrChartSelector: string) {
 // TODO: renderSeries should not draw a path crossing the limit lines.
 function renderSeries(stats: _Stats, immediately: boolean = true) {
   xplot.update({
-    series: translateToSeriesData(stats.xdataPerRange).map(toLineSeriesObject)
+    series: translateToSeriesData(stats.xdataPerRange).map(toLineSeriesObject),
+    xAxis: {
+      maxPadding: maxPadding()
+    },
   }, immediately, true)
   mrplot.update({
-    series: translateToSeriesData(stats.movementsPerRange).map(toLineSeriesObject)
+    series: translateToSeriesData(stats.movementsPerRange).map(toLineSeriesObject),
+    xAxis: {
+      maxPadding: maxPadding()
+    },
   }, immediately, true)
 }
 
@@ -419,6 +432,7 @@ function addDividerLine() {
   state.dividerLines.push(dividerLine);
 
   renderDividerLine(dividerLine)
+  redraw()
 }
 
 // redrawDividerButtons style "add/remove divider" buttons
@@ -437,12 +451,29 @@ function redrawDividerButtons() {
   }
 }
 
+// reflow charts to stack and fill in the entire screen width if there are a lot of data points
+function reflowCharts() {
+  let div = document.querySelector('#charts-container > div')
+  let x = document.querySelector('#xplot')
+  let mr = document.querySelector('#mrplot')
+  if (state.xdata.length > 31) {
+    div.classList.remove('lg:flex-nowrap')
+    x.classList.add('w-full')
+    mr.classList.add('w-full')
+  } else {
+    div.classList.add('lg:flex-nowrap')
+    x.classList.remove('w-full')
+    mr.classList.remove('w-full')
+  }
+}
+
 function redraw(immediately: boolean = true): _Stats {
   let stats = wrangleData()
   // it is important that we render the series first before limit lines
   renderSeries(stats, immediately)
   renderLimitLines(stats, immediately)
   redrawDividerButtons()
+  reflowCharts()
   // let url = generateShareLink()
   // if (url.length <= MAX_LINK_LENGTH) {
   //   // store state in url if data is not too big
@@ -511,9 +542,6 @@ function renderDividerLine(dividerLine: DividerType) {
     draggable: "x",
     zIndex: 2,
   }, false)
-
-  xplot.redraw(true)
-  mrplot.redraw(true)
 }
 
 /**
@@ -689,7 +717,10 @@ function wrangleData(): _Stats {
   console.assert(dividerLines.length >= 2, "dividerLines should contain at least two divider lines")
 
   // make sure state.xdata only contains valid data (i.e. have both x and value columns set)
-  updateInPlace(state.xdata, state.tableData.filter(dv => dv.x && (dv.value || dv.value == 0)))
+  // and it is sorted by date (x) ascending
+  let tableData = state.tableData.filter(dv => dv.x && (dv.value || dv.value == 0))
+  tableData.sort((a, b) => a.x.localeCompare(b.x))
+  updateInPlace(state.xdata, tableData)
   // Since a user might paste in data that falls beyond either limits of the previous x-axis range
   // we need to update our "shadow" divider lines so that the filteredXdata will always get all data
   let { min: xdataXmin, max: xdataXmax } = findExtremesX(state.xdata)
@@ -941,7 +972,7 @@ function registerYAxisTitleChangeListener() {
 function extractDataFromUrl(): URLSearchParams {
   const urlParams = new URLSearchParams(window.location.search)
   if (urlParams.has('d')) {
-      return urlParams;
+    return urlParams;
   }
   const hashParams = new URLSearchParams(window.location.hash.slice(1)); // Remove '#' character
   return hashParams;
@@ -1299,9 +1330,14 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
     },
     beforeChange(changes, source) {
       let xOnly = state.xdata.map(d => d.x)
-      changes.forEach(([row, prop, oldVal, newVal]) => {
-        if (prop != 'x') return;
-        xOnly[row] = newVal
+      changes.forEach(([row, prop, oldVal, newVal], idx) => {
+        if (prop == 'x') {
+          xOnly[row] = newVal
+        }
+        if (prop == 'value') {
+          // force float by removing special characters
+          changes[idx][3] = forceFloat(newVal)
+        }
       })
       checkDuplicatesInTable(xOnly, this)
     },
@@ -1475,6 +1511,11 @@ function checkDuplicatesInTable(arr: string[], tableInstance) {
   } else {
     document.getElementById('duplicate-data-warning').classList.add('hidden')
   }
+}
+
+function forceFloat(s: string) {
+  if (!s) return s;
+  return s.replace(/[^0-9.\-]/g, '')
 }
 
 // window.addEventListener("popstate", function (e) {
@@ -1762,3 +1803,10 @@ function round(n: number): number {
 function isShadowDividerLine(dl: { id: string }): boolean {
   return dl.id && (dl.id == 'divider-start' || dl.id == 'divider-end')
 }
+
+// returns a number between [0.1, 0.2] for the padding on xaxis
+function maxPadding(): number {
+  let n = Math.min(state.xdata.length, 50) / 50
+  return 0.2 - n * n * 0.1
+}
+

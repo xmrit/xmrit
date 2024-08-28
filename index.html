@@ -12,6 +12,7 @@
     
     
     
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
@@ -19,8 +20,7 @@
     <link rel="icon" href="https://xmrit.com/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="https://xmrit.com/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="https://xmrit.com/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="https://xmrit.com/favicon-16x16.png">
-    <link rel="manifest" href="https://xmrit.com/site.webmanifest"><meta property="og:title" content="XmR tool" />
+    <link rel="icon" type="image/png" sizes="16x16" href="https://xmrit.com/favicon-16x16.png"><meta property="og:title" content="XmR tool" />
 <meta property="og:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://xmrit.com/t/" /><meta property="og:image" content="https://xmrit.com/sample_xmr.png"/>
@@ -31,22 +31,71 @@
 <meta name="twitter:title" content="XmR tool"/>
 <meta name="twitter:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."/>
 </head>
-  <body class='max-w-screen-2xl mx-auto'><header class="col-span-12 pt-3 px-4 border-b pb-5 mb-5 border-slate-400">
-  <div class="flex flex-col md:flex-row items-center justify-between">
+  <body class='max-w-screen-2xl mx-auto'><header class="col-span-12 pt-3 px-4 border-b pb-5 mb-5 border-slate-400" x-data="{ isOpen: false }">
+  <div class="flex items-stretch md:items-center justify-between">
     <a class='flex items-center' href="/"><img class="w-16 h-16 mr-1" src="https://xmrit.com/xmrit-logo.png"/>
     <div class="flex flex-col justify-start">
       <h1 class="text-2xl md:text-4xl font-sans font-bold tracking-tight text-gray-700">Xmrit</h1> 
       <h3 class="text-xs md:text-sm font-sans -mt-1 italic">by Commoncog</h3>
     </div>
     </a>
-
-    <nav class="mt-5 md:mt-0 text-sm md:text-base">
-      <a class="px-2 md:px-4 py-3 hover:text-blue-700" href="https://xmrit.com/manual/">User Manual</a>
+    <button type="button" class="lg:hidden bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-blue-800 focus:outline-none focus:ring-2 focus-ring-inset focus:ring-white" aria-expanded="false" @click="isOpen = !isOpen">
+            <span class="sr-only">Open main menu</span>
+            
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+    </button>
+    <nav class="mt-5 md:mt-0 hidden lg:block text-sm md:text-base">
       
-      <a class="px-2 md:px-4 py-3 text-white bg-slate-800 hover:bg-blue-700 rounded-lg" href="https://xmrit.com/about/">What is This?</a>
       
+      <a class="hidden lg:inline px-2 md:px-4 py-3 hover:text-blue-700" href="/opensource/">Open Source</a>
+      <a class="px-2 md:px-4 py-3 hover:text-blue-700" href="/manual/">User Manual</a>
+      <a class="px-2 md:px-4 py-3 text-white bg-slate-800 hover:bg-blue-700 rounded-lg" href="/about/">What is This?</a>
       
     </nav>
+
+    <div
+             x-cloak
+             x-show="isOpen"
+             x-transition:enter="duration-150 ease-out"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="duration-100 ease-in"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="absolute top-0 inset-x-0 p-2 transition transform origin-top lg:hidden z-50">
+    <div class="rounded-lg shadow-md bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
+      <div class="px-5 pt-4 flex items-center justify-between">
+        <div>
+          <a href="/"><img class="h-8 w-auto" src="https://xmrit.com/xmrit-logo.png" alt=""></a>
+        </div>
+        <div class="-mr-2">
+          <button type="button" class="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-600" @click="isOpen = !isOpen">
+            <span class="sr-only">Close menu</span>
+            
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="pt-5 pb-6">
+        <div class="px-2 space-y-1">
+          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/articles/">Articles</a>
+          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/about/">What is This?</a>
+          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/manual/">User Manual</a>
+          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/opensource/">Open Source</a>
+        </div>
+        <div class="mt-6 px-5">
+          <a href="/t/" class="block text-center w-full py-3 px-4 rounded-md text-slate-900 border border-slate-900 hover:bg-blue-900 hover:text-white">Go To Tool</a>
+        </div>
+        <div class="mt-6 px-5">
+        </div>
+      </div>
+    </div>
+  </div>
+
   </div>
 </header>
 <main class='relative bg-white'>
@@ -55,7 +104,7 @@
 <div class="col-span-12 order-2 md:order-none flex flex-row items-end md:items-start md:col-span-4 lg:col-span-3 xl:col-span-2 px-2 md:mb-0">
   <button class="px-4 py-2 text-white bg-blue-700 hover:bg-blue-600 rounded-lg font-normal" id="refresh-charts" type="button">Refresh Charts</button>
 </div>
-<div class="col-span-12 order-3 md:order-none md:col-span-6 xl:col-span-7 px-2">
+<div class="col-span-12 order-3 md:order-none md:col-span-6 xl:col-span-7 px-2" id="charts-global-buttons">
   <div class="border border-gray-400 p-2 rounded-xl hidden">
     <label class="mb-2 text-sm font-medium text-gray-900 hover:cursor-pointer" for="csv-file">Upload CSV file: </label>
     <input class="text-sm text-slate-500 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:cursor-pointer hover:file:cursor-pointer hover:file:bg-blue-200" type="file" id="csv-file" accept=".csv">
@@ -118,9 +167,9 @@
   </p>
   <div id="dataTable" class='lg:mt-2'></div>
 </div>
-<div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 px-2">
+<div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 px-2" id="charts-container">
   <div class="flex flex-wrap lg:flex-nowrap gap-2 overflow-scroll">
-    <div id="xplot-div" class="my-2 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
+    <div id="xplot-div" class="my-2 w-11/12 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
       <div id="xplot"></div>
       <div class='flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100'>
         <button class="px-1 md:px-3 my-2 md:my-3 mr-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="add-divider" type="button">Add Divider</button>
@@ -133,7 +182,7 @@
         </button>
       </div>
     </div>
-    <div id="mrplot-div" class="my-2 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
+    <div id="mrplot-div" class="my-2 w-11/12 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
       <div id="mrplot"></div>
       <div class="flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100">
         <button class="flex items-center justify-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-blue-800 rounded-lg font-normal" id="export-mrplot" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
@@ -168,6 +217,8 @@
   <div class="flex flex-col md:flex-row items-start justify-between">
     <p class="text-gray-500 order-last md:order-first"><a class="hover:text-gray-800" href="/">Xmrit</a> by <a class="hover:text-purple-600" href="https://commoncog.com">Commoncog</a> &copy; 2024 // <br/> <a class="hover:text-gray-800" href="https://postcognito.com">Postcognito Pte Ltd</a></p>
   <nav class="mb-5 md:mb-0 flex flex-col md:flex-row">
+    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="/articles/">Articles</a>
+    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="/opensource/">Open Source</a>
     <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="/integration/">Integration</a>
     <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="https://forms.gle/93hdRwdjJYDxnvSx5">Send Feedback</a>
     <a class="text-gray-500 hover:text-gray-800 my-1 md:my-0" href="https://xmrit.com/privacy/">Privacy Policy</a>
