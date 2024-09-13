@@ -1,15 +1,15 @@
-import Handsontable from 'handsontable';
+import Handsontable from "handsontable";
+import Highcharts from "highcharts";
+import Exporting from "highcharts/modules/exporting";
+import OfflineExporting from "highcharts/modules/offline-exporting";
+import Annotation from "highcharts/modules/annotations";
+import dayjs from "dayjs";
 import lz77 from "./lz77";
-import * as Highcharts from 'highcharts';
-import * as Exporting from 'highcharts/modules/exporting';
-import * as OfflineExporting from 'highcharts/modules/offline-exporting';
-import * as Annotation from 'highcharts/modules/annotations';
-import dayjs from 'dayjs';
 
 // initialize Highcharts
-Exporting.default(Highcharts);
-OfflineExporting.default(Highcharts);
-Annotation.default(Highcharts);
+Exporting(Highcharts);
+OfflineExporting(Highcharts);
+Annotation(Highcharts);
 
 /** 
  * Typescript type and interface definitions
