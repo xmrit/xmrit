@@ -7,28 +7,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://rsms.me/">
     <link rel="canonical" href="https://xmrit.com/t/">
-    <title>  XmR tool | Xmrit by Commoncog </title>
+    <title>  Easy XmR Chart Tool | Xmrit </title>
     
     
     
     
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
     <link rel="icon" href="https://xmrit.com/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="https://xmrit.com/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="https://xmrit.com/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="https://xmrit.com/favicon-16x16.png"><meta property="og:title" content="XmR tool" />
-<meta property="og:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy." />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://xmrit.com/t/" /><meta property="og:image" content="https://xmrit.com/sample_xmr.png"/>
-<meta itemprop="name" content="XmR tool">
-<meta itemprop="description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."><meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://xmrit.com/sample_xmr.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="https://xmrit.com/favicon-16x16.png"><meta property="og:url" content="https://xmrit.com/t/">
+  <meta property="og:site_name" content="Xmrit">
+  <meta property="og:title" content="Easy XmR Chart Tool">
+  <meta property="og:description" content="The best damn XmR chart tool on the web. Helps generate XmR charts for your data with 100% privacy.">
+  <meta property="og:locale" content="en_gb">
+  <meta property="og:type" content="website">
+    <meta property="og:image" content="https://xmrit.com/sample_xmr.png">
 
-<meta name="twitter:title" content="XmR tool"/>
-<meta name="twitter:description" content="The Xmrit tool by Commoncog helps you generate XmR charts for your data with total privacy."/>
+  <meta itemprop="name" content="Easy XmR Chart Tool">
+  <meta itemprop="description" content="The best damn XmR chart tool on the web. Helps generate XmR charts for your data with 100% privacy.">
+  <meta itemprop="datePublished" content="2024-02-21T06:58:15+00:00">
+  <meta itemprop="dateModified" content="2024-02-21T06:58:15+00:00">
+  <meta itemprop="image" content="https://xmrit.com/sample_xmr.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://xmrit.com/sample_xmr.png">
+  <meta name="twitter:title" content="Easy XmR Chart Tool">
+  <meta name="twitter:description" content="The best damn XmR chart tool on the web. Helps generate XmR charts for your data with 100% privacy.">
+      <meta name="twitter:site" content="@xmrit_official">
 </head>
   <body class='max-w-screen-2xl mx-auto'><header class="col-span-12 pt-3 px-4 border-b pb-5 mb-5 border-slate-400" x-data="{ isOpen: false }">
   <div class="flex items-stretch md:items-center justify-between">
@@ -48,7 +57,9 @@
     <nav class="mt-5 md:mt-0 hidden lg:block text-sm md:text-base">
       
       
+      <a class="hidden lg:inline px-2 md:px-4 py-3 hover:text-blue-700" href="/articles/">Articles</a>
       <a class="hidden lg:inline px-2 md:px-4 py-3 hover:text-blue-700" href="/opensource/">Open Source</a>
+      <a class="hidden lg:inline px-2 md:px-4 py-3 hover:text-blue-700 underline decoration-indigo-500 underline-offset-4" href="https://shop.xmrit.com/metrics-masterclass">Metrics Masterclass</a>
       <a class="px-2 md:px-4 py-3 hover:text-blue-700" href="/manual/">User Manual</a>
       <a class="px-2 md:px-4 py-3 text-white bg-slate-800 hover:bg-blue-700 rounded-lg" href="/about/">What is This?</a>
       
@@ -85,6 +96,7 @@
           <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/about/">What is This?</a>
           <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/manual/">User Manual</a>
           <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/opensource/">Open Source</a>
+          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white underline decoration-indigo-500 underline-offset-4" href="https://shop.xmrit.com/metrics-masterclass">Metrics Masterclass</a>
         </div>
         <div class="mt-6 px-5">
           <a href="/t/" class="block text-center w-full py-3 px-4 rounded-md text-slate-900 border border-slate-900 hover:bg-blue-900 hover:text-white">Go To Tool</a>
@@ -220,7 +232,8 @@
     <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="/opensource/">Open Source</a>
     <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="/integration/">Integration</a>
     <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="https://forms.gle/93hdRwdjJYDxnvSx5">Send Feedback</a>
-    <a class="text-gray-500 hover:text-gray-800 my-1 md:my-0" href="https://xmrit.com/privacy/">Privacy Policy</a>
+    <a class="text-gray-500 hover:text-gray-800 my-1 md:my-0" href="/privacy/">Privacy Policy</a>
+    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0 underline decoration-indigo-500 underline-offset-4" href="https://shop.xmrit.com/metrics-masterclass">Metrics Masterclass</a>
   </nav>
   </div>
 </footer>
