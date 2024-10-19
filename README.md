@@ -6,21 +6,6 @@ A live version of the tool is available at http://xmrit.com/t/ . You can find mo
 
 ## Getting Started
 
-1. [Download the latest release](https://github.com/xmrit/xmrit/releases).
-2. Start a local http server from the directory
-  - We assume you have python installed
-    ```
-    python -m http.server 5000
-    ```
-3. Now, open your browser at http://localhost:5000 and voila! You're ready to go.
-
-## Contributing
-
-### Development setup
-
-The following steps will get you set up to contribute changes to this repo:
-
-1. Fork the repo (Click the Fork button at the top of [this page](https://github.com/xmrit/xmrit))
-2. Clone your fork locally
-3. Install dependencies by running `npm install`
-4. Start local dev server by running `npm run start`
+1. We assume you have [Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs) environment installed
+2. If it is your first time, run `npm install`
+3. Otherwise simply run `npm run start` and open your browser at http://localhost:1234.
