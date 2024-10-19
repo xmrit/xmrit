@@ -719,7 +719,7 @@ function wrangleData(): _Stats {
   // make sure state.xdata only contains valid data (i.e. have both x and value columns set)
   // and it is sorted by date (x) ascending
   let tableData = state.tableData.filter(dv => dv.x && (dv.value || dv.value == 0))
-  tableData.sort((a, b) => a.x.localeCompare(b.x))
+  tableData.sort((a, b) => fromDateStr(a.x) - fromDateStr(b.x))
   updateInPlace(state.xdata, tableData)
   // Since a user might paste in data that falls beyond either limits of the previous x-axis range
   // we need to update our "shadow" divider lines so that the filteredXdata will always get all data
