@@ -5,6 +5,7 @@ import OfflineExporting from "highcharts/modules/offline-exporting";
 import Annotation from "highcharts/modules/annotations";
 import dayjs from "dayjs";
 import lz77 from "./lz77";
+import { init as initEChart } from "echarts";
 
 // initialize Highcharts
 Exporting(Highcharts);
@@ -155,6 +156,9 @@ const state = {
 // global variables for the charts
 let xplot: Highcharts.Chart;
 let mrplot: Highcharts.Chart;
+
+let xplotEcharts = initEChart(document.getElementById("echart-x"));
+let mrplotEcharts = initEChart(document.getElementById("echart-mr"));
 
 /**
  * Detection Checks
