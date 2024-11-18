@@ -470,10 +470,12 @@ function reflowCharts() {
 function redraw(immediately: boolean = true): _Stats {
   let stats = wrangleData()
   // it is important that we render the series first before limit lines
-  renderSeries(stats, immediately)
-  renderLimitLines(stats, immediately)
-  redrawDividerButtons()
-  reflowCharts()
+  renderSeries(stats, immediately);
+  renderSeries2(stats);
+  renderLimitLines(stats, immediately);
+  renderLimitLines2(stats);
+  redrawDividerButtons();
+  reflowCharts();
   // let url = generateShareLink()
   // if (url.length <= MAX_LINK_LENGTH) {
   //   // store state in url if data is not too big
@@ -1810,3 +1812,294 @@ function maxPadding(): number {
   return 0.2 - n * n * 0.1
 }
 
+// echarts port
+function renderSeries2(stats: _Stats) {
+  xplotEcharts.setOption(
+    {
+      title: {
+        text: "X Plot",
+        left: "center",
+      },
+      tooltip: {},
+      xAxis: {
+        type: "time",
+      },
+      yAxis: {
+        splitLine: {
+          show: false,
+        },
+      },
+      series: translateToSeriesData2(stats.xdataPerRange),
+    },
+    true
+  );
+
+  mrplotEcharts.setOption(
+    {
+      title: {
+        text: "MR Plot",
+        left: "center",
+      },
+      tooltip: {},
+      xAxis: {
+        type: "time",
+      },
+      yAxis: {
+        splitLine: {
+          show: false,
+        },
+      },
+      series: translateToSeriesData2(stats.movementsPerRange),
+    },
+    true
+  );
+  state.dividerLines.forEach(renderDividerLine2);
+}
+
+function translateToSeriesData2(d: DataValue[][]) {
+  return d.map((subD, i) => ({
+    name: `${i}-data`,
+    type: "line",
+    data: subD.map((dv) => [fromDateStr(dv.x), dv.value]),
+  }));
+}
+
+function renderLimitLines2(stats: _Stats) {
+  console.info(stats);
+  const mrDateMin = Math.min(
+    ...state.movements.map((d) => dayjs(d.x).valueOf())
+  );
+  // Create a bunch of series for each split
+  let xSeries = [];
+  let mrSeries = [];
+
+  for (let i = 0; i < stats.lineValues.length; i++) {
+    let lv = stats.lineValues[i];
+    // doesn't draw the line if it's outside of x bounds...
+    lv.xRight = dayjs(lv.xRight).subtract(1, "day").valueOf();
+    mrSeries = mrSeries.concat([
+      {
+        name: `${i}-avgmovement`,
+        type: "line",
+        markLine: {
+          symbol: ["none", "none"],
+          lineStyle: {
+            color: "red",
+          },
+          data: [
+            [
+              {
+                xAxis: Math.max(lv.xLeft, mrDateMin),
+                yAxis: lv.avgMovement,
+              },
+              {
+                xAxis: lv.xRight,
+                yAxis: lv.avgMovement,
+              },
+            ],
+          ],
+        },
+      },
+      {
+        name: `${i}-URL`,
+        type: "line",
+        markLine: {
+          symbol: ["none", "none"],
+          lineStyle: {
+            color: "blue",
+          },
+          data: [
+            [
+              {
+                xAxis: Math.max(lv.xLeft, mrDateMin),
+                yAxis: lv.URL,
+              },
+              {
+                xAxis: lv.xRight,
+                yAxis: lv.URL,
+              },
+            ],
+          ],
+        },
+      },
+    ]);
+    xSeries = xSeries.concat([
+      {
+        name: `${i}-low-Q`,
+        type: "line",
+        markLine: {
+          symbol: ["none", "none"],
+          lineStyle: {
+            color: "gray",
+            opacity: 0.3,
+            type: "dotted",
+          },
+          data: [
+            [
+              {
+                xAxis: lv.xLeft,
+                yAxis: lv.lowerQuartile,
+              },
+              {
+                xAxis: lv.xRight,
+                yAxis: lv.lowerQuartile,
+              },
+            ],
+          ],
+        },
+      },
+      {
+        name: `${i}-upp-Q`,
+        type: "line",
+        markLine: {
+          symbol: ["none", "none"],
+          lineStyle: {
+            color: "gray",
+            opacity: 0.3,
+          },
+          data: [
+            [
+              {
+                xAxis: lv.xLeft,
+                yAxis: lv.upperQuartile,
+              },
+              {
+                xAxis: lv.xRight,
+                yAxis: lv.upperQuartile,
+              },
+            ],
+          ],
+        },
+      },
+      {
+        name: `${i}-avg`,
+        type: "line",
+        markLine: {
+          symbol: ["none", "none"],
+          lineStyle: {
+            color: "red",
+          },
+          data: [
+            [
+              {
+                xAxis: lv.xLeft,
+                yAxis: lv.avgX,
+              },
+              {
+                xAxis: lv.xRight,
+                yAxis: lv.avgX,
+              },
+            ],
+          ],
+        },
+      },
+      {
+        name: `${i}-unpl`,
+        type: "line",
+        markLine: {
+          symbol: ["none", "none"],
+          lineStyle: {
+            color: "blue",
+          },
+          data: [
+            [
+              {
+                xAxis: lv.xLeft,
+                yAxis: lv.UNPL,
+              },
+              {
+                xAxis: lv.xRight,
+                yAxis: lv.UNPL,
+              },
+            ],
+          ],
+        },
+      },
+      {
+        name: `${i}-lnpl`,
+        type: "line",
+        markLine: {
+          symbol: ["none", "none"],
+          lineStyle: {
+            color: "blue",
+          },
+          data: [
+            [
+              {
+                xAxis: lv.xLeft,
+                yAxis: lv.LNPL,
+              },
+              {
+                xAxis: lv.xRight,
+                yAxis: lv.LNPL,
+              },
+            ],
+          ],
+        },
+      },
+    ]);
+  }
+  xplotEcharts.setOption({
+    yAxis: {
+      min:
+        stats.xchartMin -
+        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
+      max:
+        stats.xchartMax +
+        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
+    },
+    series: xSeries,
+  });
+  mrplotEcharts.setOption({
+    yAxis: {
+      max: (1 + PADDING_FROM_EXTREMES) * stats.mrchartMax,
+    },
+    series: mrSeries,
+  });
+}
+
+function renderDividerLine2(dividerLine: DividerType) {
+  if (isShadowDividerLine(dividerLine)) {
+    // empty or undefined id means it is the shadow divider lines, so we don't render it
+    return;
+  }
+
+  // Convert domain from data to pixel dimension
+  const p1 = xplotEcharts.convertToPixel("grid", [dividerLine.x, 0]);
+  const p2 = xplotEcharts.convertToPixel("grid", [dividerLine.x, 9e15]);
+
+  xplotEcharts.setOption({
+    graphic: [
+      {
+        type: "line",
+        id: dividerLine.id,
+        shape: {
+          x1: p1[0],
+          y1: p1[1],
+          x2: p2[0],
+          y2: p2[1],
+        },
+        z: 100, // ensure the divider renders above all other lines
+        style: {
+          lineWidth: DIVIDER_LINE_WIDTH,
+          lineDash: "solid",
+          stroke: "purple",
+        },
+        draggable: true,
+        ondragend: (dragEvent) => {
+          for (let d of state.dividerLines) {
+            if (d.id == dragEvent.target.id) {
+              const translatedPt = xplotEcharts.convertFromPixel("grid", [
+                dragEvent.offsetX,
+                0,
+              ]);
+              d.x = translatedPt[0];
+              break;
+            }
+          }
+          redraw();
+        },
+      },
+    ],
+  });
+}
