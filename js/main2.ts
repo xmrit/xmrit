@@ -1845,6 +1845,12 @@ function renderSeries2(stats: _Stats) {
         axisLabel: {
           formatter: ECHARTS_DATE_FORMAT,
           hideOverlap: true,
+          color: "#000",
+        },
+        axisLine: {
+          lineStyle: {
+            color: "#000",
+          },
         },
         name: state.xLabel,
       },
@@ -1884,6 +1890,12 @@ function renderSeries2(stats: _Stats) {
         axisLabel: {
           formatter: ECHARTS_DATE_FORMAT,
           hideOverlap: true,
+          color: "#000",
+        },
+        axisLine: {
+          lineStyle: {
+            color: "#000",
+          },
         },
         name: state.xLabel,
       },
