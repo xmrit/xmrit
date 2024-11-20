@@ -1972,16 +1972,29 @@ function renderLimitLines2(stats: _Stats) {
       name,
       lineStyle,
       statisticY,
+      showLabel = false,
     }: {
       name: string;
       lineStyle: any;
       statisticY: number;
+      showLabel?: boolean;
     }) => ({
       name: name,
       type: "line",
       markLine: {
         symbol: ["none", "none"],
         lineStyle,
+        tooltip: {
+          show: false,
+        },
+        label: {
+          formatter: showLabel && `${statisticY}`,
+          fontSize: 11,
+          color: "#000",
+        },
+        emphasis: {
+          disabled: true,
+        },
         data: [
           [
             {
@@ -2010,6 +2023,7 @@ function renderLimitLines2(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.avgMovement ?? 0,
+        showLabel: true,
       }),
       createHorizontalLimitLineSeries({
         name: `${i}-URL`,
@@ -2019,6 +2033,7 @@ function renderLimitLines2(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.URL ?? 0,
+        showLabel: true,
       }),
     ]);
 
@@ -2028,8 +2043,8 @@ function renderLimitLines2(stats: _Stats) {
           name: `${i}-low-Q`,
           lineStyle: {
             color: "gray",
-            opacity: 0.3,
-            type: "dotted",
+            type: "dashed",
+            dashOffset: 15,
             width: 1,
           },
           statisticY: lv.lowerQuartile ?? 0,
@@ -2039,8 +2054,8 @@ function renderLimitLines2(stats: _Stats) {
           name: `${i}-upp-Q`,
           lineStyle: {
             color: "gray",
-            opacity: 0.3,
-            type: "dotted",
+            type: "dashed",
+            dashOffset: 15,
             width: 1,
           },
           statisticY: lv.upperQuartile ?? 0,
@@ -2053,6 +2068,7 @@ function renderLimitLines2(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.avgX ?? 0,
+        showLabel: true,
       }),
       createHorizontalLimitLineSeries({
         name: `${i}-unpl`,
@@ -2062,6 +2078,7 @@ function renderLimitLines2(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.UNPL ?? 0,
+        showLabel: true,
       }),
       createHorizontalLimitLineSeries({
         name: `${i}-lnpl`,
@@ -2071,6 +2088,7 @@ function renderLimitLines2(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.LNPL ?? 0,
+        showLabel: true,
       }),
     ]);
   }
