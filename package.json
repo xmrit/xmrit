@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "start": "parcel index.html && cp xmrit-bg.png dist",
-    "build": "parcel build index.html && cp xmrit-bg.png dist"
+    "start": "cp xmrit-bg.png dist/ && cp xmrit-bg-echarts.png dist/ && parcel index.html",
+    "build": "parcel build index.html && cp xmrit-bg.png dist/ && cp xmrit-bg-echarts.png dist/"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.9",

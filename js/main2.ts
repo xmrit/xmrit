@@ -131,6 +131,8 @@ const LIMIT_LINE_WIDTH = 2;
 const DIVIDER_LINE_WIDTH = 4;
 const TEXT_STONE_600 = 'rgb(87 83 78)'
 const INACTIVE_LOCKED_LIMITS = { avgX: 0, LNPL: Infinity, UNPL: -Infinity, avgMovement: 0, URL: -Infinity } as LineValueType
+const MEAN_SHAPE_COLOR = "red";
+const LIMIT_SHAPE_COLOR = "steelblue";
 
 // This is the state of the app.
 const state = {
@@ -1833,6 +1835,26 @@ function doEChartsThings(stats: _Stats) {
 function renderSeries2(stats: _Stats) {
   xplotEcharts.setOption(
     {
+      toolbox: {
+        feature: {
+          saveAsImage: {
+            type: "png",
+            pixelRatio: 2,
+            backgroundColor: {
+              image: "../xmrit-bg-echarts.png",
+              scaleX: 1,
+              scaleY: 1,
+              repeat: "no-repeat",
+            },
+          },
+        },
+      },
+      backgroundColor: {
+        image: "../xmrit-bg-echarts.png",
+        scaleX: 0.5,
+        scaleY: 0.5,
+        repeat: "no-repeat",
+      },
       title: {
         text:
           "X Plot" +
@@ -1879,6 +1901,26 @@ function renderSeries2(stats: _Stats) {
 
   mrplotEcharts.setOption(
     {
+      toolbox: {
+        feature: {
+          saveAsImage: {
+            type: "png",
+            pixelRatio: 2,
+            backgroundColor: {
+              image: "../xmrit-bg-echarts.png",
+              scaleX: 1,
+              scaleY: 1,
+              repeat: "no-repeat",
+            },
+          },
+        },
+      },
+      backgroundColor: {
+        image: "../xmrit-bg-echarts.png",
+        scaleX: 0.5,
+        scaleY: 0.5,
+        repeat: "no-repeat",
+      },
       title: {
         text: "MR Plot",
         left: "center",
