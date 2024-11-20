@@ -1820,6 +1820,7 @@ function maxPadding(): number {
 }
 
 // echarts port
+const ECHARTS_DATE_FORMAT = "{d} {MMM}";
 function doEChartsThings(stats: _Stats) {
   renderSeries2(stats);
   adjustChartAxis(stats);
@@ -1837,10 +1838,25 @@ function renderSeries2(stats: _Stats) {
       tooltip: {},
       xAxis: {
         type: "time",
+        axisLabel: {
+          formatter: ECHARTS_DATE_FORMAT,
+        },
       },
       yAxis: {
         splitLine: {
           show: false,
+        },
+        axisLabel: {
+          fontSize: 11,
+          color: "#000",
+        },
+        interval: 500,
+        name: "Value",
+        nameLocation: "middle",
+        nameRotate: 90,
+        nameGap: 40,
+        nameTextStyle: {
+          color: "#000",
         },
       },
       series: translateToSeriesData2(stats.xdataPerRange),
@@ -1857,10 +1873,25 @@ function renderSeries2(stats: _Stats) {
       tooltip: {},
       xAxis: {
         type: "time",
+        axisLabel: {
+          formatter: ECHARTS_DATE_FORMAT,
+        },
       },
       yAxis: {
         splitLine: {
           show: false,
+        },
+        axisLabel: {
+          fontSize: 11,
+          color: "#000",
+        },
+        interval: 500,
+        name: "Value",
+        nameLocation: "middle",
+        nameRotate: 90,
+        nameGap: 40,
+        nameTextStyle: {
+          color: "#000",
         },
       },
       series: translateToSeriesData2(stats.movementsPerRange),
@@ -1870,11 +1901,34 @@ function renderSeries2(stats: _Stats) {
 }
 
 function translateToSeriesData2(d: DataValue[][]) {
-  return d.map((subD, i) => ({
-    name: `${i}-data`,
-    type: "line",
-    data: subD.map((dv) => [fromDateStr(dv.x), dv.value]),
-  }));
+  return d.map((subD, i) => {
+    return {
+      name: `${i}-data`,
+      type: "line",
+      symbol: "circle",
+      symbolSize: 7,
+      lineStyle: {
+        color: "#000",
+      },
+      data: subD.map((dv) => ({
+        value: [fromDateStr(dv.x), dv.value],
+        itemStyle: {
+          color: dataStatusColor(dv.status),
+        },
+        label: {
+          show: true,
+          color: dataStatusColor(dv.status),
+          fontWeight: "bold",
+          fontSize: 10,
+        },
+        tooltip: {
+          formatter: `${dayjs(dv.x).format("ddd, D MMM YYYY")}:<br/> ${
+            dv.value
+          }`,
+        },
+      })),
+    };
+  });
 }
 
 function renderLimitLines2(stats: _Stats) {
@@ -1884,6 +1938,23 @@ function renderLimitLines2(stats: _Stats) {
 
   for (let i = 0; i < stats.lineValues.length; i++) {
     let lv = stats.lineValues[i];
+
+    let strokeWidth = LINE_STROKE_WIDTH;
+    let lineType = "dashed";
+    let options = {
+      useUpperQuartile: true,
+      useLowerQuartile: true,
+    };
+
+    if (i == 0 && isLockedLimitsActive()) {
+      options = shouldUseQuartile();
+      // augment xLeft and xRight data because it is not included in the calculation
+      state.lockedLimits.xLeft = lv.xLeft;
+      state.lockedLimits.xRight = lv.xRight;
+      lv = state.lockedLimits;
+      strokeWidth = 3;
+      lineType = "solid";
+    }
 
     const createHorizontalLimitLineSeries = ({
       name,
@@ -1906,8 +1977,11 @@ function renderLimitLines2(stats: _Stats) {
               yAxis: statisticY,
             },
             {
-              // doesn't draw the line if it's outside of x bounds...
-              xAxis: dayjs(lv.xRight).subtract(1, "day").valueOf(),
+              // deduct one day if we are at the last segment (last date value is beyond bounds of chart)
+              xAxis:
+                i == stats.lineValues.length - 1
+                  ? dayjs(lv.xRight).subtract(1, "day").valueOf()
+                  : lv.xRight,
               yAxis: statisticY,
             },
           ],
@@ -1915,61 +1989,74 @@ function renderLimitLines2(stats: _Stats) {
       },
     });
 
-    // TODO: bring the logic here to parity
     mrSeries = mrSeries.concat([
       createHorizontalLimitLineSeries({
         name: `${i}-avgmovement`,
         lineStyle: {
-          color: "red",
+          color: MEAN_SHAPE_COLOR,
+          width: strokeWidth,
+          type: lineType,
         },
         statisticY: lv.avgMovement ?? 0,
       }),
       createHorizontalLimitLineSeries({
         name: `${i}-URL`,
         lineStyle: {
-          color: "blue",
+          color: LIMIT_SHAPE_COLOR,
+          width: strokeWidth,
+          type: lineType,
         },
         statisticY: lv.URL ?? 0,
       }),
     ]);
 
     xSeries = xSeries.concat([
-      createHorizontalLimitLineSeries({
-        name: `${i}-low-Q`,
-        lineStyle: {
-          color: "gray",
-          opacity: 0.3,
-          type: "dotted",
-        },
-        statisticY: lv.lowerQuartile ?? 0,
-      }),
-      createHorizontalLimitLineSeries({
-        name: `${i}-upp-Q`,
-        lineStyle: {
-          color: "gray",
-          opacity: 0.3,
-          type: "dotted",
-        },
-        statisticY: lv.upperQuartile ?? 0,
-      }),
+      options.useLowerQuartile &&
+        createHorizontalLimitLineSeries({
+          name: `${i}-low-Q`,
+          lineStyle: {
+            color: "gray",
+            opacity: 0.3,
+            type: "dotted",
+            width: 1,
+          },
+          statisticY: lv.lowerQuartile ?? 0,
+        }),
+      options.useUpperQuartile &&
+        createHorizontalLimitLineSeries({
+          name: `${i}-upp-Q`,
+          lineStyle: {
+            color: "gray",
+            opacity: 0.3,
+            type: "dotted",
+            width: 1,
+          },
+          statisticY: lv.upperQuartile ?? 0,
+        }),
       createHorizontalLimitLineSeries({
         name: `${i}-avg`,
         lineStyle: {
-          color: "red",
+          color: MEAN_SHAPE_COLOR,
+          width: strokeWidth,
+          type: lineType,
         },
         statisticY: lv.avgX ?? 0,
       }),
       createHorizontalLimitLineSeries({
         name: `${i}-unpl`,
         lineStyle: {
-          color: "blue",
+          color: LIMIT_SHAPE_COLOR,
+          width: strokeWidth,
+          type: lineType,
         },
         statisticY: lv.UNPL ?? 0,
       }),
       createHorizontalLimitLineSeries({
         name: `${i}-lnpl`,
         lineStyle: {
-          color: "blue",
+          color: LIMIT_SHAPE_COLOR,
+          width: strokeWidth,
+          type: lineType,
         },
         statisticY: lv.LNPL ?? 0,
       }),
@@ -1984,6 +2071,25 @@ function renderLimitLines2(stats: _Stats) {
   });
 }
 
+function ceilToNearest500(val: number) {
+  return Math.ceil(val / 500) * 500;
+}
+function floorToNearest500(val: number) {
+  return Math.floor(val / 500) * 500;
+}
+function getXChartYAxisMinMax(stats: _Stats) {
+  return [
+    floorToNearest500(
+      stats.xchartMin -
+        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES
+    ),
+    ceilToNearest500(
+      stats.xchartMax +
+        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES
+    ),
+  ];
+}
+
 function adjustChartAxis(stats: _Stats) {
   const xMin = Math.min(
     ...stats.xdataPerRange.map((range) =>
@@ -1996,20 +2102,18 @@ function adjustChartAxis(stats: _Stats) {
     )
   );
 
+  const [xChartYMin, xChartYMax] = getXChartYAxisMinMax(stats);
+
   xplotEcharts.setOption({
     yAxis: {
-      min:
-        stats.xchartMin -
-        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
-      max:
-        stats.xchartMax +
-        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
+      min: xChartYMin,
+      max: xChartYMax,
     },
     xAxis: { min: xMin, max: xMax },
   });
   mrplotEcharts.setOption({
     yAxis: {
-      max: (1 + PADDING_FROM_EXTREMES) * stats.mrchartMax,
+      max: ceilToNearest500((1 + PADDING_FROM_EXTREMES) * stats.mrchartMax),
     },
     xAxis: { min: xMin, max: xMax },
   });
@@ -2026,16 +2130,9 @@ function renderDividerLine2(dividerLine: DividerType, stats: _Stats) {
   }
 
   // Convert domain from data to pixel dimension
-  const p1 = xplotEcharts.convertToPixel("grid", [
-    dividerLine.x,
-    stats.xchartMin -
-      (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
-  ]);
-  const p2 = xplotEcharts.convertToPixel("grid", [
-    dividerLine.x,
-    stats.xchartMax +
-      (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
-  ]);
+  const [xChartYMin, xChartYMax] = getXChartYAxisMinMax(stats);
+  const p1 = xplotEcharts.convertToPixel("grid", [dividerLine.x, xChartYMin]);
+  const p2 = xplotEcharts.convertToPixel("grid", [dividerLine.x, xChartYMax]);
 
   xplotEcharts.setOption({
     graphic: [
@@ -2054,7 +2151,7 @@ function renderDividerLine2(dividerLine: DividerType, stats: _Stats) {
           lineDash: "solid",
           stroke: "purple",
         },
-        draggable: true,
+        draggable: "horizontal",
         ondragend: (dragEvent) => {
           for (let d of state.dividerLines) {
             if (d.id == dragEvent.target.id) {
