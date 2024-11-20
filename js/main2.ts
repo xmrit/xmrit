@@ -1319,6 +1319,8 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
         }
         // re-register event listener
         registerYAxisTitleChangeListener()
+        // Redraw
+        redraw();
       }
     },
     // Show context menu to enable removing rows.
@@ -1832,15 +1834,19 @@ function renderSeries2(stats: _Stats) {
   xplotEcharts.setOption(
     {
       title: {
-        text: "X Plot",
+        text:
+          "X Plot" +
+          (state.yLabel.toLowerCase() !== "value" ? `: ${state.yLabel}` : ""),
         left: "center",
+        triggerEvent: true,
       },
-      tooltip: {},
       xAxis: {
         type: "time",
         axisLabel: {
           formatter: ECHARTS_DATE_FORMAT,
+          hideOverlap: true,
         },
+        name: state.xLabel,
       },
       yAxis: {
         splitLine: {
@@ -1849,9 +1855,10 @@ function renderSeries2(stats: _Stats) {
         axisLabel: {
           fontSize: 11,
           color: "#000",
+          hideOverlap: true,
         },
         interval: 500,
-        name: "Value",
+        name: state.yLabel,
         nameLocation: "middle",
         nameRotate: 90,
         nameGap: 40,
@@ -1869,13 +1876,16 @@ function renderSeries2(stats: _Stats) {
       title: {
         text: "MR Plot",
         left: "center",
+        triggerEvent: true,
       },
       tooltip: {},
       xAxis: {
         type: "time",
         axisLabel: {
           formatter: ECHARTS_DATE_FORMAT,
+          hideOverlap: true,
         },
+        name: state.xLabel,
       },
       yAxis: {
         splitLine: {
@@ -1884,9 +1894,10 @@ function renderSeries2(stats: _Stats) {
         axisLabel: {
           fontSize: 11,
           color: "#000",
+          hideOverlap: true,
         },
         interval: 500,
-        name: "Value",
+        name: state.yLabel,
         nameLocation: "middle",
         nameRotate: 90,
         nameGap: 40,
@@ -1904,6 +1915,7 @@ function translateToSeriesData2(d: DataValue[][]) {
   return d.map((subD, i) => {
     return {
       name: `${i}-data`,
+      z: 98,
       type: "line",
       symbol: "circle",
       symbolSize: 7,
@@ -2169,3 +2181,28 @@ function renderDividerLine2(dividerLine: DividerType, stats: _Stats) {
     ],
   });
 }
+
+function promptNewColumnName() {
+  let newColName = prompt("Insert a new column name", state.yLabel);
+  if (newColName) {
+    let colHeaders = hot.getColHeader();
+    colHeaders[1] = newColName;
+    state.yLabel = newColName;
+    hot.updateSettings({
+      colHeaders,
+    });
+    redraw();
+  }
+}
+
+xplotEcharts.on("click", (params) => {
+  if (params.componentType === "title") {
+    promptNewColumnName();
+  }
+});
+
+mrplotEcharts.on("click", (params) => {
+  if (params.componentType === "title") {
+    promptNewColumnName();
+  }
+});
