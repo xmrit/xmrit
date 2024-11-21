@@ -1009,6 +1009,221 @@ function setDummyData() {
   state.tableData = sampleData;
 }
 
+function lockLimits() {
+  const lockedLimits = calculateLockedLimits(); // calculate locked limits from the table
+  let obj = structuredClone(INACTIVE_LOCKED_LIMITS);
+
+  document
+    .querySelectorAll(".lock-limit-input")
+    .forEach((el: HTMLInputElement) => {
+      obj[el.dataset.limit] =
+        el.value !== "" ? Number(el.value) : lockedLimits[el.dataset.limit];
+    });
+  obj.lowerQuartile = round((obj.avgX + obj.LNPL) / 2);
+  obj.upperQuartile = round((obj.avgX + obj.UNPL) / 2);
+
+  // validate user input
+  if (obj.avgX < obj.LNPL || obj.avgX > obj.UNPL || obj.avgMovement > obj.URL) {
+    alert(
+      "Please ensure that the following limits are satisfied:\n" +
+        "1. Average X is between Lower Natural Process Limit (LNPL) and Upper Natural Process Limit (UNPL)\n" +
+        "2. Average Movement is less than or equal to Upper Range Limit (URL)"
+    );
+    return;
+  }
+  if (lockedLimits.avgX != obj.avgX) {
+    state.lockedLimitStatus |= LockedLimitStatus.AVGX_MODIFIED;
+  }
+  if (lockedLimits.LNPL != obj.LNPL) {
+    state.lockedLimitStatus |= LockedLimitStatus.LNPL_MODIFIED;
+  }
+  if (lockedLimits.UNPL != obj.UNPL) {
+    state.lockedLimitStatus |= LockedLimitStatus.UNPL_MODIFIED;
+  }
+  state.lockedLimits = obj; // set state
+  state.lockedLimitStatus |= LockedLimitStatus.LOCKED; // set to locked
+
+  redraw();
+}
+
+function initialiseHandsOnTable() {
+  const lockedLimitDataTable = document.querySelector(
+    "#lock-limit-dataTable"
+  ) as HTMLDivElement;
+  const table = document.querySelector("#dataTable") as HTMLDivElement;
+
+  lockedLimitHot = new Handsontable(lockedLimitDataTable, {
+    data: state.lockedLimitBaseData,
+    dataSchema: { x: null, value: null },
+    columns: [
+      {
+        data: "x",
+        type: "date",
+        dateFormat: "YYYY-MM-DD",
+        validator: (value, callback) => {
+          if (!value) {
+            // if null, "", or undefined
+            callback(true);
+            return;
+          }
+
+          let d = new Date(fromDateStr(value));
+          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
+          // callback(true) if date != 'Invalid Date'
+          callback(d instanceof Date && !isNaN(d.getTime()));
+        },
+      },
+      { data: "value", type: "numeric" },
+    ],
+    colHeaders: [state.xLabel, state.yLabel],
+    // Show context menu to enable removing rows.
+    contextMenu: true,
+    allowRemoveColumn: false,
+    minSpareRows: 1,
+    height: "auto",
+    stretchH: "all",
+    fillHandle: {
+      autoInsertRow: true,
+      direction: "vertical",
+    },
+    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
+      return autofillTable(selectionData, sourceRange, targetRange, direction);
+    },
+    beforePaste(data, coords) {
+      return beforePasteTable(data, coords);
+    },
+    afterChange(changes, source) {
+      if (source === "loadData") {
+        return;
+      }
+      setLockedLimitInputs(true);
+    },
+    afterValidate(isValid, value, row, prop, source) {
+      const errorMsg = document.getElementById("data-table-error");
+      if (isValid) {
+        errorMsg.classList.add("hidden");
+        return;
+      }
+      errorMsg.classList.remove("hidden");
+      return false;
+    },
+    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
+  });
+  hot = new Handsontable(table, {
+    data: state.tableData,
+    dataSchema: { x: null, value: null },
+    columns: [
+      {
+        data: "x",
+        type: "date",
+        dateFormat: "YYYY-MM-DD",
+        validator: (value, callback) => {
+          if (!value) {
+            // if null, "", or undefined
+            callback(true);
+            return;
+          }
+
+          let d = new Date(fromDateStr(value));
+          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
+          // callback(true) if date != 'Invalid Date'
+          callback(d instanceof Date && !isNaN(d.getTime()));
+        },
+      },
+      { data: "value", type: "numeric" },
+    ],
+    colHeaders: [
+      state.xLabel ?? "Date",
+      state.yLabel === "Value" ? "Value (✏️)" : state.yLabel,
+    ],
+    // Editable column header: https://github.com/handsontable/handsontable/issues/1980
+    afterOnCellMouseDown: function (e, coords) {
+      if (coords.row !== -1) {
+        return;
+      }
+      let newColName = prompt(
+        "Insert a new column name",
+        this.getColHeader()[coords.col]
+      );
+      if (newColName) {
+        let colHeaders = this.getColHeader();
+        colHeaders[coords.col] = newColName;
+        this.updateSettings({
+          colHeaders,
+        });
+        if (coords.col == 0) {
+          state.xLabel = newColName;
+          xplot.update({
+            xAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
+          });
+          mrplot.update({
+            xAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
+          });
+        } else {
+          state.yLabel = newColName;
+          xplot.update({
+            yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
+            title: { text: xplotTitle(), useHTML: true },
+          });
+          mrplot.update({
+            yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
+            title: { text: mrplotTitle(), useHTML: true },
+          });
+        }
+        // re-register event listener
+        registerYAxisTitleChangeListener();
+        // Redraw
+        redraw();
+      }
+    },
+    // Show context menu to enable removing rows.
+    contextMenu: true,
+    allowRemoveColumn: false,
+    minSpareRows: 1,
+    height: "auto",
+    stretchH: "all",
+    fillHandle: {
+      autoInsertRow: true,
+      direction: "vertical",
+    },
+    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
+      return autofillTable(selectionData, sourceRange, targetRange, direction);
+    },
+    beforePaste(data, coords) {
+      return beforePasteTable(data, coords);
+    },
+    beforeChange(changes, source) {
+      let xOnly = state.xdata.map((d) => d.x);
+      changes.forEach(([row, prop, oldVal, newVal], idx) => {
+        if (prop == "x") {
+          xOnly[row] = newVal;
+        }
+        if (prop == "value") {
+          // force float by removing special characters
+          changes[idx][3] = forceFloat(newVal);
+        }
+      });
+      checkDuplicatesInTable(xOnly, this);
+    },
+    afterChange(changes, source) {
+      if (source == "loadData") {
+        return;
+      }
+      redraw();
+    },
+    afterValidate(isValid, value, row, prop, source) {
+      const errorMsg = document.getElementById("data-table-error");
+      if (isValid) {
+        errorMsg.classList.add("hidden");
+        return;
+      }
+      errorMsg.classList.remove("hidden");
+      return false;
+    },
+    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
+  });
+}
+
 // LOGIC ON PAGE LOAD
 document.addEventListener("DOMContentLoaded", async function (_e) {
   const pageParams = extractDataFromUrl();
@@ -1053,8 +1268,6 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
     addDividerButton.addEventListener("click", addDividerLine);
   removeDividerButton &&
     removeDividerButton.addEventListener("click", removeDividerLine);
-
-  // registerYAxisTitleChangeListener();
 
   // Lock Limits
   const lockLimitButton = document.querySelector(
@@ -1110,92 +1323,22 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
     })
   );
 
-  // TODO: this should have its own handler
-
-    // validate user input
-    if (obj.avgX < obj.LNPL || obj.avgX > obj.UNPL || obj.avgMovement > obj.URL) {
-      alert('Please ensure that the following limits are satisfied:\n' +
-        '1. Average X is between Lower Natural Process Limit (LNPL) and Upper Natural Process Limit (UNPL)\n' +
-        '2. Average Movement is less than or equal to Upper Range Limit (URL)')
-      return
-    }
-    if (lv.avgX != obj.avgX) {
-      state.lockedLimitStatus |= LockedLimitStatus.AVGX_MODIFIED
-    }
-    if (lv.LNPL != obj.LNPL) {
-      state.lockedLimitStatus |= LockedLimitStatus.LNPL_MODIFIED
-    }
-    if (lv.UNPL != obj.UNPL) {
-      state.lockedLimitStatus |= LockedLimitStatus.UNPL_MODIFIED
-    }
-    state.lockedLimits = obj // set state
-    state.lockedLimitStatus |= LockedLimitStatus.LOCKED // set to locked
-    redraw()
-
-    let dialog = document.querySelector("#lock-limit-dialog") as HTMLDialogElement
-    dialog.close()
+  lockLimitDialogAddButton.addEventListener("click", () => {
+    lockLimits();
+    lockLimitDialog.close();
     // show lock-limit-remove button
-    document.querySelectorAll('.lock-limit-remove').forEach(d => d.classList.remove('hidden'))
-    document.querySelector('#lock-limit-warning').classList.remove('hidden')
-  })
-  lockedLimitHot = new Handsontable(document.querySelector("#lock-limit-dataTable"), {
-    data: state.lockedLimitBaseData,
-    dataSchema: { x: null, value: null },
-    columns: [
-      {
-        data: 'x', type: 'date', dateFormat: 'YYYY-MM-DD', validator: (value, callback) => {
-          if (!value) {
-            // if null, "", or undefined 
-            callback(true)
-            return
-          }
-
-          let d = new Date(fromDateStr(value))
-          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
-          // callback(true) if date != 'Invalid Date'
-          callback(d instanceof Date && !isNaN(d.getTime()))
-        },
-      },
-      { data: 'value', type: 'numeric' }
-    ],
-    colHeaders: [state.xLabel, state.yLabel],
-    // Show context menu to enable removing rows.
-    contextMenu: true,
-    allowRemoveColumn: false,
-    minSpareRows: 1,
-    height: 'auto',
-    stretchH: 'all',
-    fillHandle: {
-      autoInsertRow: true,
-      direction: 'vertical'
-    },
-    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
-      return autofillTable(selectionData, sourceRange, targetRange, direction)
-    },
-    beforePaste(data, coords) {
-      return beforePasteTable(data, coords)
-    },
-    afterChange(changes, source) {
-      if (source === 'loadData') {
-        return
-      }
-      setLockedLimitInputs(true)
-    },
-    afterValidate(isValid, value, row, prop, source) {
-      const errorMsg = document.getElementById('data-table-error');
-      if (isValid) {
-        errorMsg.classList.add('hidden');
-        return
-      }
-      errorMsg.classList.remove('hidden');
-      return false
-    },
-    licenseKey: 'non-commercial-and-evaluation' // for non-commercial use only
+    document
+      .querySelectorAll(".lock-limit-remove")
+      .forEach((d) => d.classList.remove("hidden"));
+    lockLimitWaringLabel.classList.remove("hidden");
   });
 
-  // CSV input logic
-  const csvFile = document.getElementById('csv-file') as HTMLInputElement;
-  csvFile.addEventListener('change', (_event) => {
+  // Data table
+  initialiseHandsOnTable();
+
+  // CSV data management
+  const csvFile = document.getElementById("csv-file") as HTMLInputElement;
+  csvFile.addEventListener("change", (e) => {
     // check if there is a file input
     if (!csvFile.files?.length) {
       console.log("No file input");
@@ -1207,62 +1350,85 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
       // parse into array
       const text = reader.result as string;
       // if not passed test, display error (inside function run) and return
-      let { passed, multiplier, xLabel, yLabel, xdata } = csvTestingParser(text);
+      let { passed, multiplier, xLabel, yLabel, xdata } =
+        csvTestingParser(text);
       if (!passed) {
         return;
       }
-      console.log(passed, multiplier, xLabel, yLabel, xdata)
+      console.log(passed, multiplier, xLabel, yLabel, xdata);
       // else handle multiplier (manipulate data and labels)
       const superscript = "⁰¹²³⁴⁵⁶⁷⁸⁹";
       function formatPower(d: number) {
-        return (d.toString()).split("")
-          .map(function (c) { return superscript[Number(c)]; })
+        return d
+          .toString()
+          .split("")
+          .map(function (c) {
+            return superscript[Number(c)];
+          })
           .join("");
       }
       if (multiplier > 0) {
         yLabel += ` (x10${formatPower(multiplier)})`;
         for (let i = 0; i < xdata.length; i++) {
-          xdata[i].value /= (10 ** multiplier);
+          xdata[i].value /= 10 ** multiplier;
         }
       }
 
       // hide error message
-      const errorMsg = document.getElementById('file-error') as HTMLDivElement;
+      const errorMsg = document.getElementById("file-error") as HTMLDivElement;
       errorMsg.style.display = "none";
       errorMsg.innerText = "";
       // UPDATE STATE
       // sortX(xdata)
-      state.xLabel = xLabel
-      state.yLabel = yLabel
-      state.tableData = xdata
-      state.lockedLimitBaseData = deepClone(state.tableData)
+      state.xLabel = xLabel;
+      state.yLabel = yLabel;
+      state.tableData = xdata;
+      state.lockedLimitBaseData = deepClone(state.tableData);
       hot.updateSettings({
         data: xdata,
-        colHeaders: [xLabel, yLabel]
-      })
+        colHeaders: [xLabel, yLabel],
+      });
       // Refreshes divider state when we upload new data
       state.dividerLines = [];
 
       renderCharts();
     });
+
     // Reads the csv file as string, after which it emits the loadend event
     reader.readAsText(input);
   });
 
-  // Set event listener to download dummy data as csv file
-  document.querySelector('#download-data').addEventListener('click', () => {
+  // Other button listeners
+  const downloadDataButton = document.querySelector(
+    "#download-data"
+  ) as HTMLButtonElement;
+  const refreshChartsButton = document.querySelector(
+    "#refresh-charts"
+  ) as HTMLButtonElement;
+  const shareLinkButton = document.querySelector(
+    "#share-link"
+  ) as HTMLButtonElement;
+
+  downloadDataButton.addEventListener("click", () => {
     // only download lines with at least one non-null value.
-    let csvContent = `${state.xLabel},${state.yLabel}\r\n` + state.xdata.filter(dv => dv.x || dv.value).map((d) => `${d.x || ''},${round(d.value) || ''}`).join("\r\n");
+    let csvContent =
+      `${state.xLabel},${state.yLabel}\r\n` +
+      state.xdata
+        .filter((dv) => dv.x || dv.value)
+        .map((d) => `${d.x || ""},${round(d.value) || ""}`)
+        .join("\r\n");
     if (isLockedLimitsActive()) {
-      csvContent += `\r\n\r\nlimit_lines,value\r\n` + [
-        `avg_x,${state.lockedLimits.avgX}`,
-        `LNPL,${state.lockedLimits.LNPL}`,
-        `UNPL,${state.lockedLimits.UNPL}`,
-        `avg_movement,${state.lockedLimits.avgMovement}`,
-        `URL,${state.lockedLimits.URL}`
-      ].join("\r\n");
+      csvContent +=
+        `\r\n\r\nlimit_lines,value\r\n` +
+        [
+          `avg_x,${state.lockedLimits.avgX}`,
+          `LNPL,${state.lockedLimits.LNPL}`,
+          `UNPL,${state.lockedLimits.UNPL}`,
+          `avg_movement,${state.lockedLimits.avgMovement}`,
+          `URL,${state.lockedLimits.URL}`,
+        ].join("\r\n");
     }
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const dataUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", dataUrl);
@@ -1274,132 +1440,35 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
     URL.revokeObjectURL(dataUrl);
   });
 
-  document.querySelector('#refresh-charts').addEventListener('click', () => {
+  refreshChartsButton.addEventListener("click", () => {
     renderCharts();
-  })
-
-  document.querySelector('#share-link').addEventListener('click', () => {
-    let link = generateShareLink(state)
+  });
+  shareLinkButton.addEventListener("click", () => {
+    let link = generateShareLink(state);
     // https://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers
     if (link.length > MAX_LINK_LENGTH) {
-      alert('Link too long! Consider removing a few datapoints.')
-      return
+      alert("Link too long! Consider removing a few datapoints.");
+      return;
     }
 
     // copy to clipboard
-    navigator.clipboard.writeText(link).then(function () {
-      console.log('Async: Copying to clipboard was successful!');
-    }, function (err) {
-      console.error('Async: Could not copy text: ', err);
-    });
+    navigator.clipboard.writeText(link).then(
+      function () {
+        console.log("Async: Copying to clipboard was successful!");
+      },
+      function (err) {
+        console.error("Async: Could not copy text: ", err);
+      }
+    );
 
     // toggle message on share button click
-    document.getElementById('data-copied-msg').classList.remove('hidden');
+    const dataCopiedMessageLabel = document.getElementById(
+      "data-copied-msg"
+    ) as HTMLDivElement;
+    dataCopiedMessageLabel.classList.remove("hidden");
     setTimeout(() => {
-      document.getElementById('data-copied-msg').classList.add('hidden');
-    }, 2000)
-  })
-
-  let table = document.querySelector('#dataTable');
-  hot = new Handsontable(table, {
-    data: state.tableData,
-    dataSchema: { x: null, value: null },
-    columns: [
-      {
-        data: 'x', type: 'date', dateFormat: 'YYYY-MM-DD', validator: (value, callback) => {
-          if (!value) {
-            // if null, "", or undefined 
-            callback(true)
-            return
-          }
-
-          let d = new Date(fromDateStr(value))
-          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
-          // callback(true) if date != 'Invalid Date'
-          callback(d instanceof Date && !isNaN(d.getTime()))
-        },
-      },
-      { data: 'value', type: 'numeric' }
-    ],
-    colHeaders: [state.xLabel ?? 'Date', state.yLabel === 'Value' ? 'Value (✏️)' : state.yLabel],
-    // Editable column header: https://github.com/handsontable/handsontable/issues/1980
-    afterOnCellMouseDown: function (e, coords) {
-      if (coords.row !== -1) {
-        return
-      }
-      let newColName = prompt('Insert a new column name', this.getColHeader()[coords.col])
-      if (newColName) {
-        let colHeaders = this.getColHeader()
-        colHeaders[coords.col] = newColName
-        this.updateSettings({
-          colHeaders,
-        })
-        if (coords.col == 0) {
-          state.xLabel = newColName;
-          xplot.update({ xAxis: { title: { text: yAxisTitle(newColName), useHTML: true } } })
-          mrplot.update({ xAxis: { title: { text: yAxisTitle(newColName), useHTML: true } } })
-        } else {
-          state.yLabel = newColName;
-          xplot.update({
-            yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-            title: { text: xplotTitle(), useHTML: true },
-          })
-          mrplot.update({
-            yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-            title: { text: mrplotTitle(), useHTML: true },
-          })
-        }
-        // re-register event listener
-        registerYAxisTitleChangeListener()
-        // Redraw
-        redraw();
-      }
-    },
-    // Show context menu to enable removing rows.
-    contextMenu: true,
-    allowRemoveColumn: false,
-    minSpareRows: 1,
-    height: 'auto',
-    stretchH: 'all',
-    fillHandle: {
-      autoInsertRow: true,
-      direction: 'vertical'
-    },
-    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
-      return autofillTable(selectionData, sourceRange, targetRange, direction)
-    },
-    beforePaste(data, coords) {
-      return beforePasteTable(data, coords)
-    },
-    beforeChange(changes, source) {
-      let xOnly = state.xdata.map(d => d.x)
-      changes.forEach(([row, prop, oldVal, newVal], idx) => {
-        if (prop == 'x') {
-          xOnly[row] = newVal
-        }
-        if (prop == 'value') {
-          // force float by removing special characters
-          changes[idx][3] = forceFloat(newVal)
-        }
-      })
-      checkDuplicatesInTable(xOnly, this)
-    },
-    afterChange(changes, source) {
-      if (source == 'loadData') {
-        return
-      }
-      redraw()
-    },
-    afterValidate(isValid, value, row, prop, source) {
-      const errorMsg = document.getElementById('data-table-error');
-      if (isValid) {
-        errorMsg.classList.add('hidden');
-        return
-      }
-      errorMsg.classList.remove('hidden');
-      return false
-    },
-    licenseKey: 'non-commercial-and-evaluation' // for non-commercial use only
+      dataCopiedMessageLabel.classList.add("hidden");
+    }, 2000);
   });
 });
 
