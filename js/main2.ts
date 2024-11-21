@@ -1894,6 +1894,9 @@ function renderSeries2(stats: _Stats) {
           color: "#000",
         },
       },
+      tooltip: {
+        show: true,
+      },
       series: translateToSeriesData2(stats.xdataPerRange),
     },
     true
@@ -1926,7 +1929,6 @@ function renderSeries2(stats: _Stats) {
         left: "center",
         triggerEvent: true,
       },
-      tooltip: {},
       xAxis: {
         type: "time",
         axisLabel: {
@@ -1958,6 +1960,9 @@ function renderSeries2(stats: _Stats) {
         nameTextStyle: {
           color: "#000",
         },
+      },
+      tooltip: {
+        show: true,
       },
       series: translateToSeriesData2(stats.movementsPerRange),
     },
@@ -2180,11 +2185,16 @@ function adjustChartAxis(stats: _Stats) {
       Math.min(...range.map((d) => dayjs(d.x).valueOf()))
     )
   );
-  const xMax = Math.max(
+
+  let xMax = Math.max(
     ...stats.movementsPerRange.map((range) =>
+      Math.max(...range.map((d) => dayjs(d.x).valueOf()))
+    ),
+    ...stats.xdataPerRange.map((range) =>
       Math.max(...range.map((d) => dayjs(d.x).valueOf()))
     )
   );
+  xMax = dayjs(xMax).add(2, "day").valueOf();
 
   const [xChartYMin, xChartYMax] = getXChartYAxisMinMax(stats);
 
