@@ -989,98 +989,128 @@ function extractDataFromUrl(): URLSearchParams {
   return hashParams;
 }
 
+function setDummyData() {
+  // Set dummy data
+  const values = [
+    5045, 4350, 4350, 3975, 4290, 4430, 4485, 4285, 3980, 3925, 3645, 3760,
+    3300, 3685, 3463, 5200,
+  ];
+  const sampleData: DataValue[] = values.map(function (el, i) {
+    // const parsedDate = d3.timeParse("%Y-%m-%d")(`2020-01-${i + 1}`);
+    // const x: Date = parsedDate || new Date();
+    return {
+      order: i,
+      x: `2020-01-${(i < 9 ? "0" : "") + (i + 1)}`,
+      value: el,
+      status: DataStatus.NORMAL,
+    };
+  });
+
+  state.tableData = sampleData;
+}
+
 // LOGIC ON PAGE LOAD
 document.addEventListener("DOMContentLoaded", async function (_e) {
-  const pageParams = extractDataFromUrl()
-  if (pageParams.has('d')) {
-    let version = pageParams.get('v') || '0';
-    let separator = pageParams.get('s') || '';
-    let ll = pageParams.get('l') || '';
-    let { xLabel, yLabel, data, dividerLines, lockedLimits, lockedLimitStatus } = await decodeShareLink(version, pageParams.get('d')!, separator, ll);
-    state.xLabel = xLabel
-    state.yLabel = yLabel
-    state.tableData = data
-    state.dividerLines = dividerLines
-    state.lockedLimits = lockedLimits
-    state.lockedLimitStatus = lockedLimitStatus
-  } else {
-    // Set dummy data
-    const values = [5045, 4350, 4350, 3975, 4290, 4430, 4485, 4285, 3980, 3925, 3645, 3760, 3300, 3685, 3463, 5200];
-    const sampleData: DataValue[] = values.map(function (el, i) {
-      // const parsedDate = d3.timeParse("%Y-%m-%d")(`2020-01-${i + 1}`);
-      // const x: Date = parsedDate || new Date();
-      return {
-        order: i,
-        x: `2020-01-${(i < 9 ? '0' : '') + (i + 1)}`,
-        value: el,
-        status: DataStatus.NORMAL
-      };
-    });
+  const pageParams = extractDataFromUrl();
 
-    state.tableData = sampleData;
+  if (pageParams.has("d")) {
+    // Load data
+    let version = pageParams.get("v") || "0";
+    let separator = pageParams.get("s") || "";
+    let ll = pageParams.get("l") || "";
+
+    let {
+      xLabel,
+      yLabel,
+      data,
+      dividerLines,
+      lockedLimits,
+      lockedLimitStatus,
+    } = await decodeShareLink(version, pageParams.get("d")!, separator, ll);
+
+    state.xLabel = xLabel;
+    state.yLabel = yLabel;
+    state.tableData = data;
+    state.dividerLines = dividerLines;
+    state.lockedLimits = lockedLimits;
+    state.lockedLimitStatus = lockedLimitStatus;
+  } else {
+    setDummyData();
   }
   // deep clone
-  state.lockedLimitBaseData = deepClone(state.tableData)
-  renderCharts();
-  document.querySelector('#add-divider').addEventListener('click', addDividerLine);
-  document.querySelector('#remove-divider').addEventListener('click', removeDividerLine);
-  // export chart logic
-  document.querySelector('#export-xplot').addEventListener('click', () => {
-    // To fix an edgecase where old limit lines are still around when user exports the chart eventhough it doesn't show up in the displayed chart.
-    // This edgecase is easier to reproduce if you modify the data after switching the tab to background for a while. 
-    renderCharts()
-    xplot.exportChartLocal({ filename: 'xplot' })
-  });
-  document.querySelector('#export-mrplot').addEventListener('click', () => {
-    // To fix an edgecase where old limit lines are still around when user exports the chart eventhough it doesn't show up in the displayed chart.
-    // This edgecase is easier to reproduce if you modify the data after switching the tab to background for a while. 
-    renderCharts()
-    mrplot.exportChartLocal({ filename: 'mrplot' })
-  });
-  registerYAxisTitleChangeListener()
+  state.lockedLimitBaseData = deepClone(state.tableData);
 
-  // limit-lines
+  renderCharts();
+
+  // Divider Buttons
+  const addDividerButton = document.querySelector(
+    "#add-divider"
+  ) as HTMLButtonElement;
+  const removeDividerButton = document.querySelector(
+    "#remove-divider"
+  ) as HTMLButtonElement;
+  addDividerButton &&
+    addDividerButton.addEventListener("click", addDividerLine);
+  removeDividerButton &&
+    removeDividerButton.addEventListener("click", removeDividerLine);
+
+  // registerYAxisTitleChangeListener();
+
+  // Lock Limits
+  const lockLimitButton = document.querySelector(
+    "#lock-limit-btn"
+  ) as HTMLButtonElement;
+  const lockLimitWaringLabel = document.querySelector(
+    "#lock-limit-warning"
+  ) as HTMLParagraphElement;
+
+  const lockLimitDialog = document.querySelector(
+    "#lock-limit-dialog"
+  ) as HTMLDialogElement;
+  const lockLimitDialogCloseButton = document.querySelector(
+    "#lock-limit-close"
+  ) as HTMLButtonElement;
+  const lockLimitDialogAddButton = document.querySelector(
+    "#lock-limit-add"
+  ) as HTMLButtonElement;
+
+  // If the initial state has locked limits, we should show the buttons and warnings
   if (isLockedLimitsActive()) {
-    // if the initial state has locked limits, we should show the buttons and warnings
-    document.querySelectorAll('.lock-limit-remove').forEach(d => d.classList.remove('hidden'))
-    document.querySelector('#lock-limit-warning').classList.remove('hidden')
+    document
+      .querySelectorAll(".lock-limit-remove")
+      .forEach((d) => d.classList.remove("hidden"));
+
+    lockLimitWaringLabel.classList.remove("hidden");
   }
-  document.querySelector("#lock-limit-btn").addEventListener("click", (e) => {
+
+  lockLimitButton.addEventListener("click", (e) => {
     if (!isLockedLimitsActive()) {
       // let the locked limit data reflect the latest table data if locked limits are not currently active
-      updateInPlace(state.lockedLimitBaseData, state.tableData)
+      updateInPlace(state.lockedLimitBaseData, state.tableData);
       lockedLimitHot.updateSettings({
         data: state.lockedLimitBaseData,
-        colHeaders: [state.xLabel, state.yLabel]
-      })
+        colHeaders: [state.xLabel, state.yLabel],
+      });
     }
-    setLockedLimitInputs(!isLockedLimitsActive())
-    let dialog = document.querySelector("#lock-limit-dialog") as HTMLDialogElement
-    dialog.showModal()
-  })
-  document.querySelector("#lock-limit-close").addEventListener("click", (e) => {
-    let dialog = document.querySelector("#lock-limit-dialog") as HTMLDialogElement
-    dialog.close()
-  })
-  document.querySelectorAll('.lock-limit-remove').forEach(d => d.addEventListener("click", (e) => {
-    xplot.removeAnnotation('locked-limits')
-    mrplot.removeAnnotation('locked-limits')
-    d.classList.add('hidden') // hide buttons
-    document.querySelector('#lock-limit-warning').classList.add('hidden')
+    setLockedLimitInputs(!isLockedLimitsActive());
+    lockLimitDialog.showModal();
+  });
 
-    state.lockedLimitStatus &= ~LockedLimitStatus.LOCKED // set to unlocked
-    redraw()
-    let dialog = document.querySelector("#lock-limit-dialog") as HTMLDialogElement
-    dialog.close()
-  }))
-  document.querySelector('#lock-limit-add').addEventListener("click", (e) => {
-    let lv = calculateLockedLimits(); // calculate locked limits from the table   
-    let obj = structuredClone(INACTIVE_LOCKED_LIMITS);
-    document.querySelectorAll('.lock-limit-input').forEach((el: HTMLInputElement) => {
-      obj[el.dataset.limit] = el.value !== '' ? Number(el.value) : lv[el.dataset.limit]
+  lockLimitDialogCloseButton.addEventListener("click", (e) => {
+    lockLimitDialog.close();
+  });
+
+  document.querySelectorAll(".lock-limit-remove").forEach((d) =>
+    d.addEventListener("click", () => {
+      d.classList.add("hidden"); // hide buttons
+      lockLimitWaringLabel.classList.add("hidden"); // hide label
+      state.lockedLimitStatus &= ~LockedLimitStatus.LOCKED; // set to unlocked
+      lockLimitDialog.close();
+      redraw();
     })
-    obj.lowerQuartile = round((obj.avgX + obj.LNPL) / 2)
-    obj.upperQuartile = round((obj.avgX + obj.UNPL) / 2)
+  );
+
+  // TODO: this should have its own handler
 
     // validate user input
     if (obj.avgX < obj.LNPL || obj.avgX > obj.UNPL || obj.avgMovement > obj.URL) {
