@@ -7,7 +7,7 @@ import {
 } from "./util";
 
 const ECHARTS_DATE_FORMAT = "{d} {MMM}";
-const BACKGROUND_IMAGE_PATH = "../xmrit-bg-echarts.png";
+const BACKGROUND_IMAGE_PATH = "../xmrit-bg.png";
 
 const toolbox = {
   feature: {
