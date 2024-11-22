@@ -8,10 +8,6 @@
     <link rel="preconnect" href="https://rsms.me/">
     <link rel="canonical" href="https://xmrit.com/t/">
     <title>  Easy XmR Chart Tool | Xmrit </title>
-    
-    
-    
-    
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
@@ -43,24 +39,24 @@
   <div class="flex items-stretch md:items-center justify-between">
     <a class='flex items-center' href="/"><img class="w-16 h-16 mr-1" src="https://xmrit.com/xmrit-logo.png"/>
     <div class="flex flex-col justify-start">
-      <h1 class="text-2xl md:text-4xl font-sans font-bold tracking-tight text-gray-700">Xmrit</h1> 
+      <h1 class="text-2xl md:text-4xl font-sans font-bold tracking-tight text-gray-700">Xmrit</h1>
       <h3 class="text-xs md:text-sm font-sans -mt-1 italic">by Commoncog</h3>
     </div>
     </a>
     <button type="button" class="lg:hidden bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-blue-800 focus:outline-none focus:ring-2 focus-ring-inset focus:ring-white" aria-expanded="false" @click="isOpen = !isOpen">
             <span class="sr-only">Open main menu</span>
-            
+
             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
     </button>
     <nav class="mt-5 md:mt-0 hidden lg:block text-sm md:text-base">
-      
-      
+
+
       <a class="hidden lg:inline px-2 md:px-4 py-3 hover:text-blue-700" href="https://xmrit.com/opensource/">Open Source</a>
       <a class="px-2 md:px-4 py-3 hover:text-blue-700" href="https://xmrit.com/manual/">User Manual</a>
       <a class="px-2 md:px-4 py-3 text-white bg-slate-800 hover:bg-blue-700 rounded-lg" href="https://xmrit.com/about/">What is This?</a>
-      
+
     </nav>
 
     <div
@@ -81,7 +77,7 @@
         <div class="-mr-2">
           <button type="button" class="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-600" @click="isOpen = !isOpen">
             <span class="sr-only">Close menu</span>
-            
+
             <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -109,7 +105,7 @@
 </header>
 <main class='relative bg-white'>
     <section class='grid grid-cols-12 grid-flow-row gap-1 md:gap-2 px-2 sm:px-6 mx-auto'>
-        
+
 <div class="col-span-12 order-2 md:order-none flex flex-row items-end md:items-start md:col-span-4 lg:col-span-3 xl:col-span-2 px-2 md:mb-0">
   <button class="px-4 py-2 text-white bg-blue-700 hover:bg-blue-600 rounded-lg font-normal" id="refresh-charts" type="button">Refresh Charts</button>
 </div>
@@ -170,7 +166,7 @@
 </div>
 <div class="col-span-12 order-5 md:order-none md:col-span-4 lg:col-span-3 xl:col-span-2 px-2">
   <p class="text-sm lg:text-xs">
-    Edit your data below. Right click for more options. 
+    Edit your data below. Right click for more options.
     <span class="text-red-600 text-sm lg:text-xs hidden" id="data-table-error">Dates should be in YYYY-MM-DD format (if copying from Excel, change date format settings!). </span>
     <span class="font-semibold text-sm lg:text-xs hidden" id="duplicate-data-warning">Duplicate data detected in the table, results might be inaccurate. </p>
   </p>
@@ -178,30 +174,17 @@
 </div>
 <div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 px-2" id="charts-container">
   <div class="flex flex-wrap lg:flex-nowrap gap-2 overflow-scroll">
-    <div id="xplot-div" class="my-2 w-11/12 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
-      <div id="xplot"></div>
-      <div id="echart-x" style="width: 600px;height:400px;"></div>
+    <div id="xplot-div" class="my-2 w-11/12 mx-auto flex flex-col justify-start items-center rounded-md box-border border border-gray-300">
+      <div id="xplot" style="width: 600px;height:400px;"></div>
       <div class='flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100'>
-        <button class="px-1 md:px-3 my-2 md:my-3 mr-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="add-divider" type="button">Add Divider</button>
+        <button class="px-1 py-2 md:px-3 my-2 md:my-3 mr-2  text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="add-divider" type="button">Add Divider</button>
         <button class="px-1 md:px-3 text-sm md:text-md text-blue-800 text-slate-400 font-normal" id="remove-divider" type="button">Remove Divider</button>
-        <button class="flex items-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-blue-800 rounded-lg font-normal" id="export-xplot" type="button">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
-          </svg>
-          &nbsp;Image
-        </button>
       </div>
     </div>
-    <div id="mrplot-div" class="my-2 w-11/12 mx-auto flex flex-col justify-center items-center rounded-md box-border border border-gray-300">
-      <div id="mrplot"></div>
-      <div id="echart-mr" style="width: 600px;height:400px;"></div>
-      <div class="flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100">
-        <button class="flex items-center justify-center my-2 md:my-3 px-3 py-2 text-sm md:text-md text-blue-800 rounded-lg font-normal" id="export-mrplot" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline w-5 h-5 -mt-1">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" /></svg>&nbsp;Image
-        </button>
-      </div>
+    <div id="mrplot-div" class="my-2 w-11/12 mx-auto flex flex-col justify-start items-center rounded-md box-border border border-gray-300">
+      <div id="mrplot" style="width: 600px;height:400px;"></div>
     </div>
-  </div>      
+  </div>
 </div>
 <div class="col-span-12 order-last mt-16 px-2 pb-10">
   <div class="border-blue-300 border bg-sky-50 rounded-lg px-2 py-4 grid grid-cols-4 grid-flow-row">
@@ -213,7 +196,7 @@
         <li><em>Optional:</em> Add and adjust <strong>dividers</strong>, or edit <strong>table headers</strong> to update chart axis labels.</li>
         <li>The full user manual is <a href="https://xmrit.com/manual/">available here</a>.</li>
       </ol>
-    </div>  
+    </div>
     <div class="col-span-4 md:col-span-2 prose p-2">
       <h2 class='text-lg font-semibold'>Privacy Notice</h2>
       <p>XmRit is 100% browser based and obsessed about protecting your privacy. Your data is never sent to our servers. <a href="https://xmrit.com/privacy/">Read the full privacy policy</a> for details on analytics tracking.</p>
@@ -237,11 +220,7 @@
   </nav>
   </div>
 </footer>
-
-
-
 <script type="module" src="/js/main2.ts" integrity=""></script>
-
   </body>
 </html>
 

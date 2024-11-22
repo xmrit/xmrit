@@ -1,35 +1,14 @@
 import Handsontable from "handsontable";
-import Highcharts from "highcharts";
-import Exporting from "highcharts/modules/exporting";
-import OfflineExporting from "highcharts/modules/offline-exporting";
-import Annotation from "highcharts/modules/annotations";
 import dayjs from "dayjs";
 import lz77 from "./lz77";
 import { init as initEChart } from "echarts";
 import type { EChartsType } from "echarts";
 import { chartBaseOptions, mapDataValuesToChartSeries } from "./chart";
-import {
-  dataLabelsStatusColor,
-  DataStatus,
-  dataStatusColor,
-  DataValue,
-} from "./util";
-
-// initialize Highcharts
-Exporting(Highcharts);
-OfflineExporting(Highcharts);
-Annotation(Highcharts);
+import { DataStatus, DataValue } from "./util";
 
 /**
  * Typescript type and interface definitions
  */
-
-declare global {
-  interface Window {
-    xplot: Highcharts.Chart;
-    mrplot: Highcharts.Chart;
-  }
-}
 
 // We use bits to represent locked limit status
 // If we modify unpl and lnpl and locked, the locked limit status will be 0111
@@ -59,14 +38,10 @@ function isLnplModified(s: LockedLimitStatus): boolean {
   );
 }
 
-// LineType is a user selectable section in d3.
-type LineType = Highcharts.Annotation;
-
 // Divider Type is the backing type for the divider line.
 interface DividerType {
   id: string;
   x: number;
-  line: LineType | null;
 }
 
 // This contains the state for a segmented section of both graphs (after
@@ -103,7 +78,6 @@ const PADDING_FROM_EXTREMES = 0.1;
 const DECIMAL_POINT = 2;
 const LINE_STROKE_WIDTH = 2;
 const DIVIDER_LINE_WIDTH = 4;
-const TEXT_STONE_600 = "rgb(87 83 78)";
 const INACTIVE_LOCKED_LIMITS = {
   avgX: 0,
   LNPL: Infinity,
@@ -135,14 +109,8 @@ const state = {
   lockedLimitStatus: LockedLimitStatus.UNLOCKED,
 };
 
-// global variables for the charts
-let xplot: Highcharts.Chart;
-let mrplot: Highcharts.Chart;
-
-let xplotEcharts: EChartsType = initEChart(document.getElementById("echart-x"));
-let mrplotEcharts: EChartsType = initEChart(
-  document.getElementById("echart-mr")
-);
+let xChart: EChartsType = initEChart(document.getElementById("xplot"));
+let mrChart: EChartsType = initEChart(document.getElementById("mrplot"));
 
 /**
  * Detection Checks
@@ -250,179 +218,6 @@ function checkOutsideLimit(
   }
 }
 
-function toLineSeriesObject(range): Highcharts.SeriesOptionsType {
-  return {
-    type: "line",
-    color: TEXT_STONE_600,
-    name: "",
-    data: range,
-    dataLabels: {
-      enabled: true,
-      style: {
-        color: TEXT_STONE_600,
-      },
-    },
-    marker: {
-      symbol: "circle",
-    },
-  };
-}
-
-/**
- * Sets the xplot and mrplot global variable. Will only set once.
- */
-function createPlots(xChartSelector: string, mrChartSelector: string) {
-  function createPlot(selector: string, data: DataValue[][]): Highcharts.Chart {
-    let options: Highcharts.Options = {
-      chart: {
-        type: "line",
-        scrollablePlotArea: {
-          minWidth: 600,
-        },
-        plotBackgroundImage: "../xmrit-bg.png",
-      },
-      time: {
-        useUTC: false,
-      },
-
-      title: {
-        text: selector === xChartSelector ? xplotTitle() : mrplotTitle(),
-        useHTML: true,
-      },
-
-      plotOptions: {
-        series: {
-          stickyTracking: false,
-        },
-      },
-
-      series: translateToSeriesData(data).map(toLineSeriesObject),
-
-      yAxis: {
-        title: {
-          text: `<div class="axis-label-y">${state.yLabel}</div>`,
-          useHTML: true,
-        },
-        gridLineWidth: 0, // disable horizontal grid lines
-      },
-      xAxis: {
-        type: "datetime",
-        title: {
-          text: state.xLabel,
-        },
-        maxPadding: maxPadding(), // space on the right end of xAxis to give space for labels
-        events: {
-          setExtremes: function (e) {
-            // https://api.highcharts.com/highcharts/xAxis.events.setExtremes
-            if (e.trigger === "zoom" && !e.min && !e.max) {
-              // When user click "reset zoom", we re-render the whole chart to make sure the limits are on display
-              // here we use a setTimeout to very quickly override the initial zoom behaviour
-              setTimeout(redraw, 1);
-            }
-          },
-        },
-      },
-      legend: {
-        enabled: false,
-      },
-      credits: {
-        enabled: false,
-      },
-      exporting: {
-        buttons: {
-          contextButton: {
-            enabled: false,
-            menuItems: ["downloadPNG", "downloadJPEG", "downloadSVG"],
-          },
-        },
-        fallbackToExportServer: false,
-        allowHTML: true,
-      },
-    };
-
-    return Highcharts.chart(selector, options);
-  }
-
-  // setup initial data
-  updateInPlace(
-    state.xdata,
-    state.tableData.filter((dv) => dv.x && (dv.value || dv.value == 0))
-  );
-  updateInPlace(state.movements, getMovements(state.xdata));
-
-  // highcharts handle freeing up memory via destroy() when we write to the same container
-  xplot = createPlot(xChartSelector, [state.xdata]);
-  mrplot = createPlot(mrChartSelector, [state.movements]);
-
-  state.dividerLines = state.dividerLines
-    .filter((dl) => !isShadowDividerLine(dl)) // filter out border "shadow" dividers
-    .concat([
-      { id: "divider-start", x: xplot.xAxis[0].min, line: null },
-      // as mrplot might have 1 less point than xplot, when mrplot.xAxis[0].max is undefined, we substitute it with Infinity
-      {
-        id: "divider-end",
-        x: Math.min(xplot.xAxis[0].max, mrplot.xAxis[0].max || Infinity),
-        line: null,
-      },
-    ]);
-  // Since our annotations extend up to the last divider line, we need to make sure that that divider lines are still in view for both xplot and mrplot.
-  // so we take the minimax value. Somehow, the xplot and mrplot xAxis[0].max are not the same.
-  // I'm concerned that this might cause some "shadow" divider to be rendered,
-  // but i think as long as renderDividerLine does not render divider lines with empty string ID, we should be fine.
-  state.dividerLines.forEach(renderDividerLine);
-
-  redraw();
-}
-
-// TODO: renderSeries should not draw a path crossing the limit lines.
-function renderSeries(stats: _Stats, immediately: boolean = true) {
-  xplot.update(
-    {
-      series: translateToSeriesData(stats.xdataPerRange).map(
-        toLineSeriesObject
-      ),
-      xAxis: {
-        maxPadding: maxPadding(),
-      },
-    },
-    immediately,
-    true
-  );
-  mrplot.update(
-    {
-      series: translateToSeriesData(stats.movementsPerRange).map(
-        toLineSeriesObject
-      ),
-      xAxis: {
-        maxPadding: maxPadding(),
-      },
-    },
-    immediately,
-    true
-  );
-}
-
-function translateToSeriesData(d: DataValue[][]) {
-  // d is the data from the table.
-  // We need to convert it to the format that Highcharts expects.
-  // We also need to convert the dates to milliseconds since epoch.
-  return d.map((subD) =>
-    subD.map((dv) => {
-      return {
-        x: fromDateStr(dv.x),
-        y: dv.value,
-        color: dataStatusColor(dv.status),
-        dataLabels: {
-          style: {
-            color: dataLabelsStatusColor(dv.status),
-            textOutline: 0,
-          },
-        },
-      };
-    })
-  );
-}
-
 /**
  * Add a new divider line to the chart
  * @returns
@@ -439,9 +234,10 @@ function addDividerLine() {
   // This is the date value (type: number) where it should be
   // And this calculates the insertion point (25%, 50%, etc) for each
   // divider point
-  let xPosition = xplot.xAxis[0].toValue(
-    (xplot.plotWidth * (dividerCount + 1)) / 4
-  );
+  let [xPosition, _] = xChart.convertFromPixel("grid", [
+    (xChart.getWidth() * (dividerCount + 1)) / 4,
+    0,
+  ]);
   // trick: dividerLine might coincides with a data point, so we move it slightly to the right
   if (xPosition % 10) {
     xPosition += 1;
@@ -450,11 +246,9 @@ function addDividerLine() {
   let dividerLine = {
     id: `divider-${dividerCount + 1}`,
     x: xPosition,
-    line: null,
   };
   state.dividerLines.push(dividerLine);
 
-  renderDividerLine(dividerLine);
   redraw();
 }
 
@@ -496,242 +290,15 @@ function reflowCharts() {
 
 function redraw(immediately: boolean = true): _Stats {
   let stats = wrangleData();
-  // it is important that we render the series first before limit lines
-  renderSeries(stats, immediately);
-  renderLimitLines(stats, immediately);
   redrawDividerButtons();
   reflowCharts();
-
   doEChartsThings(stats);
-
   return stats;
-}
-
-function renderDividerLine(dividerLine: DividerType) {
-  if (isShadowDividerLine(dividerLine)) {
-    // empty or undefined id means it is the shadow divider lines, so we don't render it
-    return;
-  }
-  redraw(false);
-
-  // Add the divider line
-  xplot.removeAnnotation(dividerLine.id);
-  dividerLine.line = xplot.addAnnotation(
-    {
-      id: dividerLine.id,
-      animation: { defer: 0 },
-      events: {
-        afterUpdate: function (e) {
-          for (let d of state.dividerLines) {
-            if (d.line == e.target) {
-              d.x = e.target.options.shapes[0].points[0].x;
-              break;
-            }
-          }
-          redraw();
-        },
-      },
-      shapes: [
-        {
-          points: [
-            // The y value is ~2^53, which is the largest number we can represent as a number (float64)
-            // It should be large enough for most purposes.
-            // This is definitely a hack :) to make this annotation looks like a plotLine
-            //
-            // An alternative is to implement the dividerLine using Highcharts.plotLines,
-            // but that would require us to implement the drag-and-drop logic for the plotline
-            // Another alternative is to keep extending the yAxis max and min based on the data,
-            // but that would require us to carefully update it on every `afterUpdate` (avoiding infinite loop)
-            { x: dividerLine.x, y: -9e15, xAxis: 0, yAxis: 0 },
-            { x: dividerLine.x, y: 9e15, xAxis: 0, yAxis: 0 },
-          ],
-          type: "path",
-          stroke: "purple",
-          strokeWidth: DIVIDER_LINE_WIDTH,
-        },
-      ],
-      draggable: "x",
-      zIndex: 2,
-    },
-    false
-  );
-}
-
-/**
- * renderLimitLines have a side effect of setting the chart yAxis extremes
- * renderLimitLines depends on the xAxis extremes being set correctly. Hence it must be called after renderSeries
- * @param stats
- * @param redraw whether to redraw. defaults to true
- */
-function renderLimitLines(stats: _Stats, redraw: boolean = true): void {
-  function labelFromShape(
-    shape: Highcharts.AnnotationsShapesOptions
-  ): Highcharts.AnnotationsLabelsOptions {
-    return {
-      point: shape.points[1],
-      shape: "connector",
-      align: "left",
-    };
-  }
-
-  let shapesForXplot = [];
-  let shapesForMrPlot = [];
-  for (let i = 0; i < stats.lineValues.length; i++) {
-    let lv = stats.lineValues[i];
-    if (i == stats.lineValues.length - 1) {
-      // try to extend the limit lines a bit after the last data point. We add minimum 1-day worth of x
-      // this change is purely for rendering purposes, not logical change.
-      // There is no reason for the math or for the number 5 aside from it looks good on a few data I tried on (daily, weekly, monthly)
-      lv.xRight =
-        lv.xRight +
-        Math.max(
-          86400 * 1000,
-          (Math.min(xplot.xAxis[0].max, mrplot.xAxis[0].max) - lv.xRight) / 5
-        );
-    }
-    let strokeWidth = LINE_STROKE_WIDTH;
-    let meanShapeColor = "red";
-    let limitShapeColor = "steelblue";
-    let dashStyle = "ShortDash";
-    let options = {
-      useUpperQuartile: true,
-      useLowerQuartile: true,
-    };
-    if (i == 0 && isLockedLimitsActive()) {
-      options = shouldUseQuartile();
-      // augment xLeft and xRight data because it is not included in the calculation
-      state.lockedLimits.xLeft = lv.xLeft;
-      state.lockedLimits.xRight = lv.xRight;
-      lv = state.lockedLimits;
-      strokeWidth = 3;
-      dashStyle = "Solid";
-    }
-    if (options.useLowerQuartile) {
-      let lowerQuartileShape = {
-        points: [
-          { x: lv.xLeft, y: lv.lowerQuartile, xAxis: 0, yAxis: 0 },
-          { x: lv.xRight, y: lv.lowerQuartile, xAxis: 0, yAxis: 0 },
-        ],
-        type: "path",
-        dashStyle: "Dot",
-        strokeWidth: 1,
-      };
-      shapesForXplot.push(lowerQuartileShape);
-    }
-    if (options.useUpperQuartile) {
-      let upperQuartileShape = {
-        points: [
-          { x: lv.xLeft, y: lv.upperQuartile, xAxis: 0, yAxis: 0 },
-          { x: lv.xRight, y: lv.upperQuartile, xAxis: 0, yAxis: 0 },
-        ],
-        type: "path",
-        dashStyle: "Dot",
-        strokeWidth: 1,
-      };
-      shapesForXplot.push(upperQuartileShape);
-    }
-    let avgXShape = {
-      points: [
-        { x: lv.xLeft, y: lv.avgX, xAxis: 0, yAxis: 0 },
-        { x: lv.xRight, y: lv.avgX, xAxis: 0, yAxis: 0 },
-      ],
-      type: "path",
-      dashStyle,
-      stroke: meanShapeColor,
-      strokeWidth,
-    };
-    let lnplShape = {
-      points: [
-        { x: lv.xLeft, y: lv.LNPL, xAxis: 0, yAxis: 0 },
-        { x: lv.xRight, y: lv.LNPL, xAxis: 0, yAxis: 0 },
-      ],
-      type: "path",
-      dashStyle,
-      stroke: limitShapeColor,
-      strokeWidth,
-    };
-    let unplShape = {
-      points: [
-        { x: lv.xLeft, y: lv.UNPL, xAxis: 0, yAxis: 0 },
-        { x: lv.xRight, y: lv.UNPL, xAxis: 0, yAxis: 0 },
-      ],
-      type: "path",
-      dashStyle,
-      stroke: limitShapeColor,
-      strokeWidth,
-    };
-    shapesForXplot.push(avgXShape, lnplShape, unplShape);
-
-    let avgMovementShape = {
-      points: [
-        { x: lv.xLeft, y: lv.avgMovement, xAxis: 0, yAxis: 0 },
-        { x: lv.xRight, y: lv.avgMovement, xAxis: 0, yAxis: 0 },
-      ],
-      type: "path",
-      dashStyle,
-      stroke: meanShapeColor,
-      strokeWidth,
-    };
-    let urlShape = {
-      points: [
-        { x: lv.xLeft, y: lv.URL, xAxis: 0, yAxis: 0 },
-        { x: lv.xRight, y: lv.URL, xAxis: 0, yAxis: 0 },
-      ],
-      type: "path",
-      dashStyle,
-      stroke: limitShapeColor,
-      strokeWidth,
-    };
-    shapesForMrPlot.push(avgMovementShape, urlShape);
-  }
-
-  // Adjust the range of yaxis in both charts to keep all limit lines in view
-  xplot.yAxis[0].setExtremes(
-    stats.xchartMin -
-      (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
-    stats.xchartMax +
-      (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES,
-    false
-  );
-  mrplot.yAxis[0].setExtremes(
-    0,
-    (1 + PADDING_FROM_EXTREMES) * stats.mrchartMax,
-    false
-  );
-
-  xplot.removeAnnotation("limit-lines");
-  xplot.addAnnotation(
-    {
-      id: "limit-lines",
-      animation: { defer: 0 },
-      draggable: "",
-      shapes: shapesForXplot,
-      labels: shapesForXplot.map((shape) => labelFromShape(shape)).slice(-3),
-      zIndex: 1,
-    },
-    false
-  );
-  mrplot.removeAnnotation("limit-lines");
-  mrplot.addAnnotation(
-    {
-      id: "limit-lines",
-      animation: { defer: 0 },
-      draggable: "",
-      shapes: shapesForMrPlot,
-      labels: shapesForMrPlot.map((shape) => labelFromShape(shape)).slice(-2),
-      zIndex: 1,
-    },
-    false
-  );
-
-  xplot.redraw(redraw);
-  mrplot.redraw(redraw);
 }
 
 function removeDividerLine() {
   // remove the last added annotation
   let id = `divider-${state.dividerLines.length - 2}`;
-  xplot.removeAnnotation(id);
   state.dividerLines = state.dividerLines.filter((d) => d.id != id);
   redraw();
 }
@@ -1006,39 +573,6 @@ screen.orientation.addEventListener("change", (e) => {
 let hot: Handsontable;
 let lockedLimitHot: Handsontable;
 
-/**
- * Initializes event listener for title / yaxis label changes.
- */
-function registerYAxisTitleChangeListener() {
-  const listener = (e: PointerEvent) => {
-    let newColName = prompt("Insert a new column name", state.yLabel);
-    if (newColName) {
-      let colHeaders = hot.getColHeader();
-      colHeaders[1] = newColName;
-      state.yLabel = newColName;
-      hot.updateSettings({
-        colHeaders,
-      });
-      xplot.update({
-        yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-        title: { text: xplotTitle(), useHTML: true },
-      });
-      mrplot.update({
-        yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-        title: { text: mrplotTitle(), useHTML: true },
-      });
-      // re-register event listener
-      registerYAxisTitleChangeListener();
-    }
-  };
-  document
-    .querySelectorAll(".axis-label-y")
-    .forEach((el) => el.addEventListener("click", listener));
-  document
-    .querySelectorAll(".plot-title")
-    .forEach((el) => el.addEventListener("click", listener));
-}
-
 function extractDataFromUrl(): URLSearchParams {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has("d")) {
@@ -1212,25 +746,9 @@ function initialiseHandsOnTable() {
         });
         if (coords.col == 0) {
           state.xLabel = newColName;
-          xplot.update({
-            xAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-          });
-          mrplot.update({
-            xAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-          });
         } else {
           state.yLabel = newColName;
-          xplot.update({
-            yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-            title: { text: xplotTitle(), useHTML: true },
-          });
-          mrplot.update({
-            yAxis: { title: { text: yAxisTitle(newColName), useHTML: true } },
-            title: { text: mrplotTitle(), useHTML: true },
-          });
         }
-        // re-register event listener
-        registerYAxisTitleChangeListener();
         // Redraw
         redraw();
       }
@@ -1323,10 +841,9 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
   const removeDividerButton = document.querySelector(
     "#remove-divider"
   ) as HTMLButtonElement;
-  addDividerButton &&
-    addDividerButton.addEventListener("click", addDividerLine);
-  removeDividerButton &&
-    removeDividerButton.addEventListener("click", removeDividerLine);
+
+  addDividerButton.addEventListener("click", addDividerLine);
+  removeDividerButton.addEventListener("click", removeDividerLine);
 
   // Lock Limits
   const lockLimitButton = document.querySelector(
@@ -1764,29 +1281,6 @@ function forceFloat(s: string) {
   return s.replace(/[^0-9.\-]/g, "");
 }
 
-// window.addEventListener("popstate", function (e) {
-//   console.log("popstate", e)
-//   if (e.state) {
-//     console.log("state", e.state)
-
-//     updateInPlace(state.tableData, e.state.state.tableData)
-//     state.xLabel = e.state.state.xLabel
-//     state.yLabel = e.state.state.yLabel
-
-//     hot.updateSettings({
-//       colHeaders: [state.xLabel, state.yLabel]
-//     })
-//     updateInPlace(state.xdata, e.state.state.xdata)
-//     updateInPlace(state.movements, e.state.state.movements)
-//     // state.dividerLines.forEach(dl => !isShadowDividerLine(dl) && xplot.removeAnnotation(dl.id))
-//     state.dividerLines = e.state.state.dividerLines
-
-//     renderLimitLines(wrangleData())
-//     renderSeries()
-//     state.dividerLines.forEach(renderDividerLine)
-//   }
-// });
-
 /**
  * Returns true if the upper limit lines and lower limit lines are symmetric w.r.t. average line
  * Otherwise, we check which side's limit has been changed and disable the quartile line for that side
@@ -1834,10 +1328,6 @@ function toDateStr(d: Date): string {
 
 function fromDateStr(ds: string): number {
   return dayjs(ds).valueOf();
-}
-
-function getSign(n: number) {
-  return n > 0 ? 1 : n < 0 ? -1 : 0;
 }
 
 function updateInPlace(dest: DataValue[], src: DataValue[]) {
@@ -2028,7 +1518,6 @@ async function decodeShareLink(
         return {
           id: `divider-${i + 1}`,
           x: x,
-          line: null,
         };
       })
     );
@@ -2062,19 +1551,25 @@ async function decodeShareLink(
 }
 
 function renderCharts() {
-  createPlots("xplot", "mrplot");
-}
+  // setup initial data
+  updateInPlace(
+    state.xdata,
+    state.tableData.filter((dv) => dv.x && (dv.value || dv.value == 0))
+  );
+  updateInPlace(state.movements, getMovements(state.xdata));
 
-const xplotTitle = () =>
-  `<div class="plot-title">X Plot<span>${
-    state.yLabel.toLowerCase() !== "value" ? ": " + state.yLabel : ""
-  }</span></div>`;
-const mrplotTitle = () =>
-  `<div class="plot-title">MR Plot<span>${
-    state.yLabel.toLowerCase() !== "value" ? ": " + state.yLabel : ""
-  }</span></div>`;
-const yAxisTitle = (newColName) =>
-  `<div class="axis-label-y">${newColName}</div>`;
+  state.dividerLines = state.dividerLines
+    .filter((dl) => !isShadowDividerLine(dl)) // filter out border "shadow" dividers
+    .concat([
+      { id: "divider-start", x: 0 },
+      {
+        id: "divider-end",
+        x: Infinity,
+      },
+    ]);
+
+  redraw();
+}
 
 /**
  * Find the extremes on the x-axis
@@ -2098,13 +1593,7 @@ function round(n: number): number {
 }
 
 function isShadowDividerLine(dl: { id: string }): boolean {
-  return dl.id && (dl.id == "divider-start" || dl.id == "divider-end");
-}
-
-// returns a number between [0.1, 0.2] for the padding on xaxis
-function maxPadding(): number {
-  let n = Math.min(state.xdata.length, 50) / 50;
-  return 0.2 - n * n * 0.1;
+  return dl.id != null && (dl.id == "divider-start" || dl.id == "divider-end");
 }
 
 // echarts port
@@ -2112,14 +1601,14 @@ function doEChartsThings(stats: _Stats) {
   initialiseECharts(true);
   renderStats(stats);
   adjustChartAxis(stats);
-  renderLimitLines2(stats);
+  renderLimitLines(stats);
   renderEChartDividerLines(stats);
 }
 
 function initialiseECharts(shouldReplaceState: boolean = false) {
-  xplotEcharts.setOption({ ...chartBaseOptions }, shouldReplaceState);
-  mrplotEcharts.setOption({ ...chartBaseOptions }, shouldReplaceState);
-  xplotEcharts.setOption({
+  xChart.setOption({ ...chartBaseOptions }, shouldReplaceState);
+  mrChart.setOption({ ...chartBaseOptions }, shouldReplaceState);
+  xChart.setOption({
     title: {
       text:
         "X Plot" +
@@ -2132,9 +1621,11 @@ function initialiseECharts(shouldReplaceState: boolean = false) {
       name: state.yLabel,
     },
   });
-  mrplotEcharts.setOption({
+  mrChart.setOption({
     title: {
-      text: "MR Plot",
+      text:
+        "MR Plot" +
+        (state.yLabel.toLowerCase() !== "value" ? `: ${state.yLabel}` : ""),
     },
     xAxis: {
       name: state.xLabel,
@@ -2146,15 +1637,15 @@ function initialiseECharts(shouldReplaceState: boolean = false) {
 }
 
 function renderStats(stats: _Stats) {
-  xplotEcharts.setOption({
+  xChart.setOption({
     series: stats.xdataPerRange.map(mapDataValuesToChartSeries),
   });
-  mrplotEcharts.setOption({
+  mrChart.setOption({
     series: stats.movementsPerRange.map(mapDataValuesToChartSeries),
   });
 }
 
-function renderLimitLines2(stats: _Stats) {
+function renderLimitLines(stats: _Stats) {
   // Create a bunch of series for each split
   let xSeries = [];
   let mrSeries = [];
@@ -2213,10 +1704,10 @@ function renderLimitLines2(stats: _Stats) {
               yAxis: statisticY,
             },
             {
-              // deduct one day if we are at the last segment (last date value is beyond bounds of chart)
+              // add one day if we are at the last segment (extend line slightly beyond last value)
               xAxis:
                 i == stats.lineValues.length - 1
-                  ? dayjs(lv.xRight).subtract(1, "day").valueOf()
+                  ? dayjs(lv.xRight).add(1, "day").valueOf()
                   : lv.xRight,
               yAxis: statisticY,
             },
@@ -2304,10 +1795,10 @@ function renderLimitLines2(stats: _Stats) {
     ]);
   }
 
-  xplotEcharts.setOption({
+  xChart.setOption({
     series: xSeries,
   });
-  mrplotEcharts.setOption({
+  mrChart.setOption({
     series: mrSeries,
   });
 }
@@ -2350,14 +1841,14 @@ function adjustChartAxis(stats: _Stats) {
 
   const [xChartYMin, xChartYMax] = getXChartYAxisMinMax(stats);
 
-  xplotEcharts.setOption({
+  xChart.setOption({
     yAxis: {
       min: xChartYMin,
       max: xChartYMax,
     },
     xAxis: { min: xMin, max: xMax },
   });
-  mrplotEcharts.setOption({
+  mrChart.setOption({
     yAxis: {
       max: ceilToNearest500((1 + PADDING_FROM_EXTREMES) * stats.mrchartMax),
     },
@@ -2377,10 +1868,10 @@ function renderDividerLine2(dividerLine: DividerType, stats: _Stats) {
 
   // Convert domain from data to pixel dimension
   const [xChartYMin, xChartYMax] = getXChartYAxisMinMax(stats);
-  const p1 = xplotEcharts.convertToPixel("grid", [dividerLine.x, xChartYMin]);
-  const p2 = xplotEcharts.convertToPixel("grid", [dividerLine.x, xChartYMax]);
+  const p1 = xChart.convertToPixel("grid", [dividerLine.x, xChartYMin]);
+  const p2 = xChart.convertToPixel("grid", [dividerLine.x, xChartYMax]);
 
-  xplotEcharts.setOption({
+  xChart.setOption({
     graphic: [
       {
         type: "line",
@@ -2401,7 +1892,7 @@ function renderDividerLine2(dividerLine: DividerType, stats: _Stats) {
         ondragend: (dragEvent) => {
           for (let d of state.dividerLines) {
             if (d.id == dragEvent.target.id) {
-              const translatedPt = xplotEcharts.convertFromPixel("grid", [
+              const translatedPt = xChart.convertFromPixel("grid", [
                 dragEvent.offsetX,
                 0,
               ]);
@@ -2429,13 +1920,13 @@ function promptNewColumnName() {
   }
 }
 
-xplotEcharts.on("click", (params) => {
+xChart.on("click", (params) => {
   if (params.componentType === "title") {
     promptNewColumnName();
   }
 });
 
-mrplotEcharts.on("click", (params) => {
+mrChart.on("click", (params) => {
   if (params.componentType === "title") {
     promptNewColumnName();
   }
