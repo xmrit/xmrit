@@ -12,6 +12,7 @@
     "tailwindcss": "^3.4.11"
   },
   "dependencies": {
+    "@sigmacomputing/plugin": "^1.0.6",
     "dayjs": "^1.11.10",
     "echarts": "^5.5.1",
     "handsontable": "^14.3.0",
