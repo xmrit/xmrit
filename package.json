@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "start": "cp xmrit-bg.png dist/ && parcel index.html",
-    "build": "parcel build index.html && cp xmrit-bg.png dist/",
+    "start": "parcel index.html",
+    "build": "parcel build index.html",
     "clean": "rm -rf .parcel-cache/",
     "reinstall": "rm -rf node_modules/ && yarn install"
   },
