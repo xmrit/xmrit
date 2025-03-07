@@ -7,29 +7,17 @@ import {
 } from "./util";
 
 const ECHARTS_DATE_FORMAT = "{d} {MMM}";
-const BACKGROUND_IMAGE_PATH = "../xmrit-bg.png";
 
 const toolbox = {
   feature: {
     saveAsImage: {
       type: "png",
       pixelRatio: 2,
-      backgroundColor: {
-        image: BACKGROUND_IMAGE_PATH,
-        scaleX: 1,
-        scaleY: 1,
-        repeat: "no-repeat",
-      },
     },
   },
 };
 
-const backgroundColor = {
-  image: BACKGROUND_IMAGE_PATH,
-  scaleX: 0.5,
-  scaleY: 0.5,
-  repeat: "no-repeat",
-};
+const backgroundColor = "#ffffff";
 
 const xAxis = {
   type: "time",
