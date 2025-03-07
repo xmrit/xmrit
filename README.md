@@ -20,6 +20,13 @@ A live version of the tool is available at http://xmrit.com/t/ . You can find mo
 3. Run the development server: `npm run start`
 4. Open your browser at http://localhost:1234
 
+### UI Changes
+
+This version features a simplified UI with:
+- No header or footer
+- Cleaner interface focused on chart functionality
+- Removed background image
+
 ## Building for Production
 
 To create a production build:
