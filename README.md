@@ -6,6 +6,38 @@ A live version of the tool is available at http://xmrit.com/t/ . You can find mo
 
 ## Getting Started
 
-1. We assume you have [Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs) environment installed
-2. If it is your first time, run `npm install`
-3. Otherwise simply run `npm run start` and open your browser at http://localhost:1234.
+### Using Yarn (recommended)
+
+1. Make sure you have [Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs) and [Yarn](https://yarnpkg.com/getting-started/install) installed
+2. Install dependencies: `yarn install`
+3. Run the development server: `yarn start`
+4. Open your browser at http://localhost:1234
+
+### Using npm
+
+1. Make sure you have [Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs) installed
+2. Install dependencies: `npm install`
+3. Run the development server: `npm run start`
+4. Open your browser at http://localhost:1234
+
+## Building for Production
+
+To create a production build:
+
+```bash
+# Using Yarn
+yarn build
+
+# Using npm
+npm run build
+```
+
+The built files will be in the `dist` directory.
+
+## Troubleshooting
+
+If you encounter build issues:
+
+1. Clear cached files: `rm -rf .parcel-cache/`
+2. Rebuild the node_modules: `rm -rf node_modules/ && yarn install`
+3. Make sure port 1234 is not in use by another application
