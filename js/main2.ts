@@ -1,10 +1,10 @@
-import Handsontable from "handsontable";
 import dayjs from "dayjs";
 import lz77 from "./lz77";
 import { init as initEChart } from "echarts";
 import type { EChartsType } from "echarts";
 import { chartBaseOptions, mapDataValuesToChartSeries } from "./chart";
 import { DataStatus, DataValue } from "./util";
+import { initializeSigmaPlugin, mountSigmaProvider } from "./sigma-integration";
 
 /**
  * Typescript type and interface definitions
@@ -90,10 +90,8 @@ const LIMIT_SHAPE_COLOR = "steelblue";
 
 // This is the state of the app.
 const state = {
-  // tableData, xLabel and yLabel is set by the handsontable (the table rendered onscreen).
-  // for handsontable to be reactive, use hot.updateSettings({ ... }). Don't just use assignment.
-  tableData: [] as DataValue[], // handsontable data. Might contain null values.
-  lockedLimitBaseData: [] as DataValue[], // data for the locked limit lines
+  // Data from Sigma Computing
+  tableData: [] as DataValue[],  // Contains the data from Sigma
   xLabel: "Date",
   yLabel: "Value",
 
@@ -102,15 +100,16 @@ const state = {
   xdata: [] as DataValue[], // data passed to plot(...). Will not contain null values.
   movements: [] as DataValue[],
   dividerLines: [] as DividerType[],
-  // this is the state of the locked limit lines, either calculated from lockedLimitBaseData or overwritten by user.
+  // this is the state of the locked limit lines, either calculated from tableData or overwritten by user.
   // Only written when the user press "Lock limits" in the popup.
   // Locked limits should be considered active if some values are non-zero.
   lockedLimits: structuredClone(INACTIVE_LOCKED_LIMITS),
   lockedLimitStatus: LockedLimitStatus.UNLOCKED,
 };
 
-let xChart: EChartsType = initEChart(document.getElementById("xplot"));
-let mrChart: EChartsType = initEChart(document.getElementById("mrplot"));
+// Initialize charts - these will be properly set on DOMContentLoaded
+let xChart: EChartsType;
+let mrChart: EChartsType;
 
 /**
  * Detection Checks
@@ -289,10 +288,29 @@ function reflowCharts() {
 }
 
 function redraw(immediately: boolean = true): _Stats {
+  console.log("redraw - Starting with data:", { 
+    xdataLength: state.xdata.length,
+    movementsLength: state.movements.length,
+    dividerLinesLength: state.dividerLines.length
+  });
+  
   let stats = wrangleData();
+  console.log("redraw - wrangleData completed with stats:", {
+    xchartMin: stats.xchartMin,
+    xchartMax: stats.xchartMax,
+    mrchartMax: stats.mrchartMax,
+    lineValuesCount: stats.lineValues.length,
+    xdataPerRangeCount: stats.xdataPerRange.length,
+    movementsPerRangeCount: stats.movementsPerRange.length
+  });
+  
   redrawDividerButtons();
   reflowCharts();
+  
+  console.log("redraw - Calling doEChartsThings...");
   doEChartsThings(stats);
+  console.log("redraw - doEChartsThings completed");
+  
   return stats;
 }
 
@@ -311,6 +329,11 @@ function removeDividerLine() {
 // with no Line associated with it (so it doesn't get rendered in the chart)
 // (2) Checks against the 3 XMR rules for each range and color data points accordingly
 function wrangleData(): _Stats {
+  console.log("wrangleData - Starting with xdata:", { 
+    xdataLength: state.xdata.length,
+    firstFewItems: state.xdata.slice(0, 3)
+  });
+
   let dividerLines = state.dividerLines;
   // need to make sure dividerLines are sorted
   dividerLines.sort((a, b) => a.x - b.x);
@@ -325,13 +348,44 @@ function wrangleData(): _Stats {
   let tableData = state.tableData.filter(
     (dv) => dv.x && (dv.value || dv.value == 0)
   );
+  
+  // Handle empty data gracefully
+  if (tableData.length === 0) {
+    console.warn("wrangleData - No valid data found in tableData");
+    return {
+      xchartMin: 0,
+      xchartMax: 100,
+      mrchartMax: 100,
+      lineValues: [],
+      xdataPerRange: [],
+      movementsPerRange: []
+    };
+  }
+  
+  // Log sample data for debugging
+  console.log("wrangleData - Sample of filtered data:", tableData.slice(0, 3));
+  
+  console.log("wrangleData - Filtered tableData:", { 
+    tableDataLength: tableData.length,
+    firstFewItems: tableData.slice(0, 3)
+  });
+  
   tableData.sort((a, b) => fromDateStr(a.x) - fromDateStr(b.x));
   updateInPlace(state.xdata, tableData);
+  
   // Since a user might paste in data that falls beyond either limits of the previous x-axis range
   // we need to update our "shadow" divider lines so that the filteredXdata will always get all data
   let { min: xdataXmin, max: xdataXmax } = findExtremesX(state.xdata);
-  dividerLines[0].x = xdataXmin;
-  dividerLines[dividerLines.length - 1].x = xdataXmax;
+  
+  if (isFinite(xdataXmin) && isFinite(xdataXmax)) {
+    dividerLines[0].x = xdataXmin;
+    dividerLines[dividerLines.length - 1].x = xdataXmax;
+  } else {
+    console.warn("wrangleData - Invalid date range detected:", { xdataXmin, xdataXmax });
+    // Use default values in case we have invalid dates
+    dividerLines[0].x = 0;
+    dividerLines[dividerLines.length - 1].x = Infinity;
+  }
 
   // chartMin is the lowest y-value that needs to be drawn in the chart
   // chartMax is the highest y-value that needs to be drawn in the chart
@@ -345,6 +399,15 @@ function wrangleData(): _Stats {
     xdataPerRange: [] as DataValue[][],
     movementsPerRange: [] as DataValue[][],
   };
+  
+  // If we have no data, return early with empty stats
+  if (state.xdata.length === 0) {
+    console.warn("wrangleData - No data in xdata, returning empty stats");
+    stats.xchartMin = 0;
+    stats.xchartMax = 100;
+    stats.mrchartMax = 100;
+    return stats;
+  }
 
   let xdataWithStatus: DataValue[] = [];
   let mrdataWithStatus: DataValue[] = [];
@@ -570,8 +633,7 @@ screen.orientation.addEventListener("change", (e) => {
   redraw();
 });
 
-let hot: Handsontable;
-let lockedLimitHot: Handsontable;
+// No longer using Handsontable with Sigma Computing integration
 
 function extractDataFromUrl(): URLSearchParams {
   const urlParams = new URLSearchParams(window.location.search);
@@ -603,7 +665,7 @@ function setDummyData() {
 }
 
 function lockLimits() {
-  const lockedLimits = calculateLockedLimits(); // calculate locked limits from the table
+  const lockedLimits = calculateLockedLimits(); // calculate locked limits from the data
   let obj = structuredClone(INACTIVE_LOCKED_LIMITS);
 
   document
@@ -803,38 +865,50 @@ function initialiseHandsOnTable() {
 
 // LOGIC ON PAGE LOAD
 document.addEventListener("DOMContentLoaded", async function (_e) {
+  console.log("DOMContentLoaded - Initializing application");
+  
   const pageParams = extractDataFromUrl();
 
-  if (pageParams.has("d")) {
-    // Load data
-    let version = pageParams.get("v") || "0";
-    let separator = pageParams.get("s") || "";
-    let ll = pageParams.get("l") || "";
-
-    let {
-      xLabel,
-      yLabel,
-      data,
-      dividerLines,
-      lockedLimits,
-      lockedLimitStatus,
-    } = await decodeShareLink(version, pageParams.get("d")!, separator, ll);
-
-    state.xLabel = xLabel;
-    state.yLabel = yLabel;
-    state.tableData = data;
-    state.dividerLines = dividerLines;
-    state.lockedLimits = lockedLimits;
-    state.lockedLimitStatus = lockedLimitStatus;
-  } else {
-    setDummyData();
+  // Initialize with empty state - data will come from Sigma
+  state.xdata = [];
+  state.movements = [];
+  state.dividerLines = [
+    { id: "divider-start", x: 0 },
+    { id: "divider-end", x: Infinity }
+  ];
+  
+  // Initialize ECharts instances
+  console.log("DOMContentLoaded - Initializing chart elements");
+  const xplotElement = document.getElementById("xplot");
+  const mrplotElement = document.getElementById("mrplot");
+  
+  if (!xplotElement || !mrplotElement) {
+    console.error("DOMContentLoaded - Chart elements not found in DOM:", {
+      xplotElement: !!xplotElement,
+      mrplotElement: !!mrplotElement
+    });
+    return;
   }
-  // deep clone
-  state.lockedLimitBaseData = deepClone(state.tableData);
-
+  
+  xChart = initEChart(xplotElement);
+  mrChart = initEChart(mrplotElement);
+  console.log("DOMContentLoaded - Chart instances created:", {
+    xChartInitialized: !!xChart,
+    mrChartInitialized: !!mrChart
+  });
+  
+  // Set up chart event handlers
+  setupChartEventHandlers();
+  
+  // Initialize Sigma plugin
+  console.log("DOMContentLoaded - Initializing Sigma plugin");
+  initializeSigmaPlugin();
+  
+  // Initialize charts
+  console.log("DOMContentLoaded - Rendering initial charts");
   renderCharts();
-
-  // Divider Buttons
+  
+  // Set up divider buttons
   const addDividerButton = document.querySelector(
     "#add-divider"
   ) as HTMLButtonElement;
@@ -873,14 +947,6 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
   }
 
   lockLimitButton.addEventListener("click", (e) => {
-    if (!isLockedLimitsActive()) {
-      // let the locked limit data reflect the latest table data if locked limits are not currently active
-      updateInPlace(state.lockedLimitBaseData, state.tableData);
-      lockedLimitHot.updateSettings({
-        data: state.lockedLimitBaseData,
-        colHeaders: [state.xLabel, state.yLabel],
-      });
-    }
     setLockedLimitInputs(!isLockedLimitsActive());
     lockLimitDialog.showModal();
   });
@@ -909,116 +975,55 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
     lockLimitWaringLabel.classList.remove("hidden");
   });
 
-  // Data table
-  initialiseHandsOnTable();
-
-  // CSV data management
-  const csvFile = document.getElementById("csv-file") as HTMLInputElement;
-  csvFile.addEventListener("change", (e) => {
-    // check if there is a file input
-    if (!csvFile.files?.length) {
-      console.log("No file input");
-      return;
+  // Initialize Sigma data provider
+  mountSigmaProvider((data, xLabel, yLabel) => {
+    if (typeof window.addDebugLog === 'function') {
+      window.addDebugLog(`Sigma data callback received: ${data.length} items, xLabel=${xLabel}, yLabel=${yLabel}`);
+      
+      if (data.length > 0) {
+        window.addDebugLog(`First data item: ${JSON.stringify(data[0])}`);
+      }
     }
-    const input = csvFile!.files[0];
-    const reader = new FileReader();
-    reader.addEventListener("loadend", () => {
-      // parse into array
-      const text = reader.result as string;
-      // if not passed test, display error (inside function run) and return
-      let { passed, multiplier, xLabel, yLabel, xdata } =
-        csvTestingParser(text);
-      if (!passed) {
-        return;
-      }
-      console.log(passed, multiplier, xLabel, yLabel, xdata);
-      // else handle multiplier (manipulate data and labels)
-      const superscript = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-      function formatPower(d: number) {
-        return d
-          .toString()
-          .split("")
-          .map(function (c) {
-            return superscript[Number(c)];
-          })
-          .join("");
-      }
-      if (multiplier > 0) {
-        yLabel += ` (x10${formatPower(multiplier)})`;
-        for (let i = 0; i < xdata.length; i++) {
-          xdata[i].value /= 10 ** multiplier;
-        }
-      }
-
-      // hide error message
-      const errorMsg = document.getElementById("file-error") as HTMLDivElement;
-      errorMsg.style.display = "none";
-      errorMsg.innerText = "";
-      // UPDATE STATE
-      // sortX(xdata)
-      state.xLabel = xLabel;
-      state.yLabel = yLabel;
-      state.tableData = xdata;
-      state.lockedLimitBaseData = deepClone(state.tableData);
-      hot.updateSettings({
-        data: xdata,
-        colHeaders: [xLabel, yLabel],
-      });
-      // Refreshes divider state when we upload new data
-      state.dividerLines = [];
-
-      renderCharts();
-    });
-
-    // Reads the csv file as string, after which it emits the loadend event
-    reader.readAsText(input);
+    
+    // Update application state with Sigma data
+    state.xLabel = xLabel;
+    state.yLabel = yLabel;
+    state.tableData = data;
+    
+    if (typeof window.addDebugLog === 'function') {
+      window.addDebugLog(`State updated with data, tableData length: ${state.tableData.length}`);
+    }
+    
+    // Reset divider lines when data changes
+    state.dividerLines = [
+      { id: "divider-start", x: 0 },
+      { id: "divider-end", x: Infinity }
+    ];
+    
+    // Update our data
+    updateInPlace(state.xdata, data);
+    
+    const movements = getMovements(data);
+    updateInPlace(state.movements, movements);
+    
+    if (typeof window.addDebugLog === 'function') {
+      window.addDebugLog(`Data arrays updated - xdata: ${state.xdata.length}, movements: ${state.movements.length}`);
+      window.addDebugLog("Calling redraw with data...");
+    }
+    
+    // Redraw charts with new data
+    redraw();
+    
+    if (typeof window.addDebugLog === 'function') {
+      window.addDebugLog("Redraw completed");
+    }
   });
 
-  // Other button listeners
-  const downloadDataButton = document.querySelector(
-    "#download-data"
-  ) as HTMLButtonElement;
-  const refreshChartsButton = document.querySelector(
-    "#refresh-charts"
-  ) as HTMLButtonElement;
+  // Share link button
   const shareLinkButton = document.querySelector(
     "#share-link"
   ) as HTMLButtonElement;
 
-  downloadDataButton.addEventListener("click", () => {
-    // only download lines with at least one non-null value.
-    let csvContent =
-      `${state.xLabel},${state.yLabel}\r\n` +
-      state.xdata
-        .filter((dv) => dv.x || dv.value)
-        .map((d) => `${d.x || ""},${round(d.value) || ""}`)
-        .join("\r\n");
-    if (isLockedLimitsActive()) {
-      csvContent +=
-        `\r\n\r\nlimit_lines,value\r\n` +
-        [
-          `avg_x,${state.lockedLimits.avgX}`,
-          `LNPL,${state.lockedLimits.LNPL}`,
-          `UNPL,${state.lockedLimits.UNPL}`,
-          `avg_movement,${state.lockedLimits.avgMovement}`,
-          `URL,${state.lockedLimits.URL}`,
-        ].join("\r\n");
-    }
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const dataUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", dataUrl);
-    link.setAttribute("download", "xmr-data.csv");
-    link.click();
-    // Clean up the anchor element
-    link.remove();
-    // Revoke the object URL to free up memory
-    URL.revokeObjectURL(dataUrl);
-  });
-
-  refreshChartsButton.addEventListener("click", () => {
-    renderCharts();
-  });
   shareLinkButton.addEventListener("click", () => {
     let link = generateShareLink(state);
     // https://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers
@@ -1073,7 +1078,7 @@ function calculateLimits(xdata: DataValue[]): Partial<LineValueType> {
 
 // This function is a 'no-divider' version of the calculation of the limits (specifically for the locked limits)
 function calculateLockedLimits() {
-  let xdata = state.lockedLimitBaseData.filter(
+  let xdata = state.tableData.filter(
     (dv) => dv.x && (dv.value || dv.value == 0)
   );
   return calculateLimits(xdata);
@@ -1084,7 +1089,7 @@ function calculateLockedLimits() {
  * @param updateInputValue whether to update the value of the inputs
  */
 function setLockedLimitInputs(updateInputValue: boolean) {
-  let lv = calculateLockedLimits(); // calculate locked limits from the table
+  let lv = calculateLockedLimits(); // calculate locked limits from Sigma data
   document
     .querySelectorAll(".lock-limit-input")
     .forEach((el: HTMLInputElement) => {
@@ -1327,11 +1332,33 @@ function toDateStr(d: Date): string {
 }
 
 function fromDateStr(ds: string): number {
-  return dayjs(ds).valueOf();
+  try {
+    // Try to parse as-is with dayjs
+    const parsed = dayjs(ds);
+    if (parsed.isValid()) {
+      return parsed.valueOf();
+    }
+    
+    // Try JavaScript Date parsing
+    const jsDate = new Date(ds);
+    if (!isNaN(jsDate.getTime())) {
+      return jsDate.getTime();
+    }
+    
+    // Log error if we can't parse the date
+    console.error(`fromDateStr - Failed to parse date: ${ds}`);
+    // Return a default value
+    return 0;
+  } catch (err) {
+    console.error(`fromDateStr - Error parsing date ${ds}:`, err);
+    return 0;
+  }
 }
 
 function updateInPlace(dest: DataValue[], src: DataValue[]) {
+  console.log(`updateInPlace - Updating array from ${dest.length} to ${src.length} items`);
   dest.splice(0, dest.length, ...deepClone(src));
+  console.log(`updateInPlace - After update: ${dest.length} items`);
 }
 
 function deepClone(src: DataValue[]): DataValue[] {
@@ -1551,13 +1578,16 @@ async function decodeShareLink(
 }
 
 function renderCharts() {
-  // setup initial data
-  updateInPlace(
-    state.xdata,
-    state.tableData.filter((dv) => dv.x && (dv.value || dv.value == 0))
-  );
-  updateInPlace(state.movements, getMovements(state.xdata));
+  // setup initial data from Sigma if available
+  if (state.tableData.length > 0) {
+    updateInPlace(
+      state.xdata,
+      state.tableData.filter((dv) => dv.x && (dv.value || dv.value == 0))
+    );
+    updateInPlace(state.movements, getMovements(state.xdata));
+  }
 
+  // Initialize or reset divider lines
   state.dividerLines = state.dividerLines
     .filter((dl) => !isShadowDividerLine(dl)) // filter out border "shadow" dividers
     .concat([
@@ -1577,13 +1607,49 @@ function renderCharts() {
  * @returns
  */
 function findExtremesX(arr: DataValue[]) {
+  console.log("findExtremesX - Processing array:", { 
+    length: arr.length, 
+    sample: arr.slice(0, 3)
+  });
+
+  if (!arr || arr.length === 0) {
+    console.warn("findExtremesX - Empty array provided");
+    return { min: 0, max: Infinity }; // Default values if array is empty
+  }
+  
   let min = Infinity;
   let max = -Infinity;
+  let validDates = 0;
+  
   arr.forEach((el) => {
-    let d = fromDateStr(el.x);
-    min = Math.min(min, d);
-    max = Math.max(max, d);
+    try {
+      if (!el.x) {
+        console.warn("findExtremesX - Missing date value in entry:", el);
+        return;
+      }
+      
+      let d = fromDateStr(el.x);
+      
+      if (isNaN(d) || !isFinite(d)) {
+        console.warn("findExtremesX - Invalid date value:", { x: el.x, parsed: d });
+        return;
+      }
+      
+      min = Math.min(min, d);
+      max = Math.max(max, d);
+      validDates++;
+    } catch (err) {
+      console.error("findExtremesX - Error parsing date:", { x: el.x, error: err });
+    }
   });
+  
+  // If no valid dates were found, use default values
+  if (validDates === 0 || !isFinite(min) || !isFinite(max)) {
+    console.warn("findExtremesX - No valid dates found");
+    return { min: 0, max: Infinity };
+  }
+  
+  console.log("findExtremesX - Found range:", { min, max });
   return { min, max };
 }
 
@@ -1598,11 +1664,27 @@ function isShadowDividerLine(dl: { id: string }): boolean {
 
 // echarts port
 function doEChartsThings(stats: _Stats) {
+  console.log("doEChartsThings - Starting chart rendering");
+  
+  console.log("doEChartsThings - Initializing ECharts");
   initialiseECharts(true);
+  
+  console.log("doEChartsThings - Rendering data series with stats:", {
+    xdataPerRangeLength: stats.xdataPerRange.length,
+    movementsPerRangeLength: stats.movementsPerRange.length
+  });
   renderStats(stats);
+  
+  console.log("doEChartsThings - Adjusting chart axis");
   adjustChartAxis(stats);
+  
+  console.log("doEChartsThings - Rendering limit lines");
   renderLimitLines(stats);
+  
+  console.log("doEChartsThings - Rendering divider lines");
   renderEChartDividerLines(stats);
+  
+  console.log("doEChartsThings - Chart rendering complete");
 }
 
 function initialiseECharts(shouldReplaceState: boolean = false) {
@@ -1637,12 +1719,34 @@ function initialiseECharts(shouldReplaceState: boolean = false) {
 }
 
 function renderStats(stats: _Stats) {
-  xChart.setOption({
-    series: stats.xdataPerRange.map(mapDataValuesToChartSeries),
+  console.log("renderStats - Rendering with data:", {
+    xdataPerRangeLength: stats.xdataPerRange.length,
+    movementsPerRangeLength: stats.movementsPerRange.length
   });
-  mrChart.setOption({
-    series: stats.movementsPerRange.map(mapDataValuesToChartSeries),
-  });
+  
+  if (!stats.xdataPerRange || stats.xdataPerRange.length === 0) {
+    console.warn("renderStats - No X data to render");
+    // Render empty charts
+    xChart.setOption({
+      series: []
+    });
+  } else {
+    xChart.setOption({
+      series: stats.xdataPerRange.map(mapDataValuesToChartSeries),
+    });
+  }
+  
+  if (!stats.movementsPerRange || stats.movementsPerRange.length === 0) {
+    console.warn("renderStats - No movement data to render");
+    // Render empty charts
+    mrChart.setOption({
+      series: []
+    });
+  } else {
+    mrChart.setOption({
+      series: stats.movementsPerRange.map(mapDataValuesToChartSeries),
+    });
+  }
 }
 
 function renderLimitLines(stats: _Stats) {
@@ -1920,14 +2024,21 @@ function promptNewColumnName() {
   }
 }
 
-xChart.on("click", (params) => {
-  if (params.componentType === "title") {
-    promptNewColumnName();
+// Add event handlers after chart instances are initialized
+function setupChartEventHandlers() {
+  if (xChart) {
+    xChart.on("click", (params) => {
+      if (params.componentType === "title") {
+        promptNewColumnName();
+      }
+    });
   }
-});
 
-mrChart.on("click", (params) => {
-  if (params.componentType === "title") {
-    promptNewColumnName();
+  if (mrChart) {
+    mrChart.on("click", (params) => {
+      if (params.componentType === "title") {
+        promptNewColumnName();
+      }
+    });
   }
-});
+}

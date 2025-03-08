@@ -9,7 +9,6 @@
     <link rel="canonical" href="https://xmrit.com/t/">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
     <link rel="icon" href="https://xmrit.com/favicon.ico">
@@ -38,18 +37,10 @@
 <main class='relative bg-white'>
     <section class='grid grid-cols-12 grid-flow-row gap-1 md:gap-2 px-2 sm:px-6 mx-auto'>
 
-<div class="col-span-12 order-2 md:order-none flex flex-row items-end md:items-start md:col-span-4 lg:col-span-3 xl:col-span-2 px-2 md:mb-0">
-  <button class="px-4 py-2 text-white bg-blue-700 hover:bg-blue-600 rounded-lg font-normal" id="refresh-charts" type="button">Refresh Charts</button>
-</div>
 <div class="col-span-12 order-3 md:order-none md:col-span-6 xl:col-span-7 px-2" id="charts-global-buttons">
-  <div class="border border-gray-400 p-2 rounded-xl hidden">
-    <label class="mb-2 text-sm font-medium text-gray-900 hover:cursor-pointer" for="csv-file">Upload CSV file: </label>
-    <input class="text-sm text-slate-500 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:cursor-pointer hover:file:cursor-pointer hover:file:bg-blue-200" type="file" id="csv-file" accept=".csv">
-  </div>
-
-  <button class="px-4 py-2 text-white bg-slate-700 hover:bg-slate-600 rounded-lg font-normal" id="lock-limit-btn" type="button">Lock Limits</button>
+  <!-- Lock Limits button hidden but functionality preserved -->
+  <button class="px-4 py-2 text-white bg-slate-700 hover:bg-slate-600 rounded-lg font-normal hidden" id="lock-limit-btn" type="button">Lock Limits</button>
   <button class="text-slate-500 px-2 hidden lock-limit-remove">Remove Limits</button>
-  <button class="py-2 px-2 text-blue-800 hover:text-blue-600 font-normal" id="download-data" type="button">Download Data</button>
   <dialog id="lock-limit-dialog" class="p-6 overflow-y-auto bg-white rounded-xl shadow-xl max-w-prose">
     <div class="pb-2">
       <button class="text-red-500 pr-2" id="lock-limit-close">Close</button>
@@ -80,28 +71,24 @@
         <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="URL" placeholder="Enter the limit">
       </div>
     </div>
-    <div id="lock-limit-dataTable"></div>
+    <!-- Sigma data will be used for calculations instead of a data table -->
   </dialog>
 </div>
 <div class="col-span-12 order-4 md:order-none md:col-span-2 lg:col-span-3 flex flex-row items-start md:flex-row-reverse">
-  <button class="flex items-center justify-center px-4 py-2 text-blue-800 hover:text-blue-600 font-normal" id="share-link" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+  <!-- Share link button hidden but functionality preserved -->
+  <button class="flex items-center justify-center px-4 py-2 text-blue-800 hover:text-blue-600 font-normal hidden" id="share-link" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
       <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
     </svg>&nbsp;Share Link</button>
     <div class="px-4 py-2 tracking-tight text-green-600 hidden" id="data-copied-msg">Link copied to clipboard</div>
 </div>
 <div class="col-span-12 order-1 md:order-none px-2">
-  <div id="file-error" class="text-red-500 font-bold hidden"></div>
+  <!-- Removed file-error div as we now use Sigma Computing for data -->
   <div class="bg-red-50 border border-red-300 md:hidden rounded-lg p-3 mb-3">
     <p>XmRit! isn’t built for mobile use. Some functionality is degraded. For the full experience, load this on a tablet or computer.</p>
   </div>
 </div>
-<div class="col-span-12 order-5 md:order-none md:col-span-4 lg:col-span-3 xl:col-span-2 px-2">
-  <p class="text-sm lg:text-xs">
-    Edit your data below. Right click for more options.
-    <span class="text-red-600 text-sm lg:text-xs hidden" id="data-table-error">Dates should be in YYYY-MM-DD format (if copying from Excel, change date format settings!). </span>
-    <span class="font-semibold text-sm lg:text-xs hidden" id="duplicate-data-warning">Duplicate data detected in the table, results might be inaccurate. </p>
-  </p>
-  <div id="dataTable" class='lg:mt-2'></div>
+<div class="col-span-12 order-5 md:order-none md:col-span-4 lg:col-span-3 xl:col-span-2 px-2" id="sigma-config-container">
+  <!-- Sigma Computing plugin controls will appear here -->
 </div>
 <div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 px-2" id="charts-container">
   <div class="flex flex-wrap lg:flex-nowrap gap-2 overflow-scroll">
