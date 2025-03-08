@@ -47,11 +47,40 @@
   <body class='w-full m-0 p-0 overflow-x-hidden'>
 <main class='relative bg-white w-full m-0 p-0' style="left: 0;position: absolute;">
     <section class='grid grid-cols-12 grid-flow-row gap-0 p-0'>
+    
+<!-- Main Chart Container - First Element -->
+<div class="col-span-12 col-start-1 md:col-span-12 lg:col-span-12 xl:col-span-12 p-0" id="charts-container">
+  <div class="flex flex-wrap lg:flex-nowrap gap-0 overflow-scroll pl-0">
+    <div id="xplot-div" class="my-2 w-full ml-0 mr-0 flex flex-col justify-start items-start rounded-r-md rounded-l-none box-border border-t border-r border-b border-gray-300 border-l-0">
+      <div id="xplot" style="width: 100%;height:400px;margin:0;padding:0;position:relative;left:-10px;"></div>
+      <div class='flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100'>
+        <button class="px-1 py-2 md:px-3 my-2 md:my-3 mr-2 text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="add-divider" type="button">Add Divider</button>
+        <button class="px-1 md:px-3 text-sm md:text-md text-blue-800 text-slate-400 font-normal" id="remove-divider" type="button">Remove Divider</button>
+      </div>
+    </div>
+    <div id="mrplot-div" class="my-2 w-11/12 ml-0 mr-auto flex flex-col justify-start items-start rounded-md box-border border border-gray-300">
+      <div id="mrplot" style="width: 100%;height:400px;margin:0;padding:0;"></div>
+    </div>
+  </div>
+</div>
 
-<div class="col-span-12 order-3 md:order-none md:col-span-6 xl:col-span-7 pr-2 pl-0" id="charts-global-buttons">
+<!-- Sigma Config Container - Second Element -->
+<div class="col-span-12 md:col-span-12 lg:col-span-12 xl:col-span-12 hidden" id="sigma-config-container">
+  <!-- Sigma Computing plugin controls will appear here -->
+</div>
+
+<!-- Hidden elements needed for functionality but not display -->
+<div class="hidden" id="charts-global-buttons">
   <!-- Lock Limits button hidden but functionality preserved -->
-  <button class="px-4 py-2 text-white bg-slate-700 hover:bg-slate-600 rounded-lg font-normal hidden" id="lock-limit-btn" type="button">Lock Limits</button>
-  <button class="text-slate-500 px-2 hidden lock-limit-remove">Remove Limits</button>
+  <button class="hidden" id="lock-limit-btn" type="button">Lock Limits</button>
+  <button class="hidden lock-limit-remove">Remove Limits</button>
+</div>
+
+<div class="hidden">
+  <!-- Share link button hidden but functionality preserved -->
+  <button class="hidden" id="share-link" type="button">Share Link</button>
+  <div class="hidden" id="data-copied-msg">Link copied to clipboard</div>
+</div>
   <dialog id="lock-limit-dialog" class="p-6 overflow-y-auto bg-white rounded-xl shadow-xl max-w-prose">
     <div class="pb-2">
       <button class="text-red-500 pr-2" id="lock-limit-close">Close</button>
