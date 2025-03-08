@@ -81,7 +81,7 @@
   <button class="hidden" id="share-link" type="button">Share Link</button>
   <div class="hidden" id="data-copied-msg">Link copied to clipboard</div>
 </div>
-  <dialog id="lock-limit-dialog" class="p-6 overflow-y-auto bg-white rounded-xl shadow-xl max-w-prose">
+  <dialog id="lock-limit-dialog" class="p-6 overflow-y-auto bg-white rounded-xl shadow-xl max-w-prose hidden">
     <div class="pb-2">
       <button class="text-red-500 pr-2" id="lock-limit-close">Close</button>
       <button class="text-slate-500 pr-2 hidden lock-limit-remove">Remove Limits</button>
@@ -111,39 +111,9 @@
         <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="URL" placeholder="Enter the limit">
       </div>
     </div>
-    <!-- Sigma data will be used for calculations instead of a data table -->
   </dialog>
 </div>
-<div class="col-span-12 order-4 md:order-none md:col-span-2 lg:col-span-3 flex flex-row items-start md:flex-row-reverse">
-  <!-- Share link button hidden but functionality preserved -->
-  <button class="flex items-center justify-center px-4 py-2 text-blue-800 hover:text-blue-600 font-normal hidden" id="share-link" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-    </svg>&nbsp;Share Link</button>
-    <div class="px-4 py-2 tracking-tight text-green-600 hidden" id="data-copied-msg">Link copied to clipboard</div>
-</div>
-<div class="col-span-12 order-1 md:order-none px-2">
-  <!-- Removed file-error div as we now use Sigma Computing for data -->
-  <div class="bg-red-50 border border-red-300 md:hidden rounded-lg p-3 mb-3">
-    <p>XmRit! isn’t built for mobile use. Some functionality is degraded. For the full experience, load this on a tablet or computer.</p>
-  </div>
-</div>
-<div class="col-span-12 order-5 md:order-none md:col-span-4 lg:col-span-3 xl:col-span-2 pr-2 pl-0" id="sigma-config-container">
-  <!-- Sigma Computing plugin controls will appear here -->
-</div>
-<div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 p-0" id="charts-container">
-  <div class="flex flex-wrap lg:flex-nowrap gap-0 overflow-scroll pl-0">
-    <div id="xplot-div" class="my-2 w-full ml-0 mr-0 flex flex-col justify-start items-start rounded-r-md rounded-l-none box-border border-t border-r border-b border-gray-300 border-l-0">
-      <div id="xplot" style="width: 100%;height:400px;margin:0;padding:0;position:relative;left:-10px;"></div>
-      <div class='flex flex-row w-full justify-center mt-2 border-t-2 border-gray-100'>
-        <button class="px-1 py-2 md:px-3 my-2 md:my-3 mr-2  text-sm md:text-md text-white bg-blue-900 hover:bg-blue-800 rounded-lg font-normal" id="add-divider" type="button">Add Divider</button>
-        <button class="px-1 md:px-3 text-sm md:text-md text-blue-800 text-slate-400 font-normal" id="remove-divider" type="button">Remove Divider</button>
-      </div>
-    </div>
-    <div id="mrplot-div" class="my-2 w-11/12 ml-0 mr-auto flex flex-col justify-start items-start rounded-md box-border border border-gray-300">
-      <div id="mrplot" style="width: 100%;height:400px;margin:0;padding:0;"></div>
-    </div>
-  </div>
-</div>
+<!-- Share functionality is already included in the hidden section -->
 
     </section>
     </main>
