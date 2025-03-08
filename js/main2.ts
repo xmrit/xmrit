@@ -1692,9 +1692,7 @@ function initialiseECharts(shouldReplaceState: boolean = false) {
   mrChart.setOption({ ...chartBaseOptions }, shouldReplaceState);
   xChart.setOption({
     title: {
-      text:
-        "X Plot" +
-        (state.yLabel.toLowerCase() !== "value" ? `: ${state.yLabel}` : ""),
+      text: state.yLabel,
     },
     xAxis: {
       name: state.xLabel,
@@ -1705,9 +1703,7 @@ function initialiseECharts(shouldReplaceState: boolean = false) {
   });
   mrChart.setOption({
     title: {
-      text:
-        "MR Plot" +
-        (state.yLabel.toLowerCase() !== "value" ? `: ${state.yLabel}` : ""),
+      text: `MR: ${state.yLabel}`,
     },
     xAxis: {
       name: state.xLabel,
