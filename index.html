@@ -7,10 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://rsms.me/">
     <link rel="canonical" href="https://xmrit.com/t/">
-    <title>  Easy XmR Chart Tool | Xmrit </title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
     <link rel="icon" href="https://xmrit.com/favicon.ico">
@@ -35,89 +33,14 @@
   <meta name="twitter:description" content="The best damn XmR chart tool on the web. Helps generate XmR charts for your data with 100% privacy.">
       <meta name="twitter:site" content="@xmrit_official">
 </head>
-  <body class='max-w-screen-2xl mx-auto'><header class="col-span-12 pt-3 px-4 border-b pb-5 mb-5 border-slate-400" x-data="{ isOpen: false }">
-  <div class="flex items-stretch md:items-center justify-between">
-    <a class='flex items-center' href="/"><img class="w-16 h-16 mr-1" src="https://xmrit.com/xmrit-logo.png"/>
-    <div class="flex flex-col justify-start">
-      <h1 class="text-2xl md:text-4xl font-sans font-bold tracking-tight text-gray-700">Xmrit</h1>
-      <h3 class="text-xs md:text-sm font-sans -mt-1 italic">by Commoncog</h3>
-    </div>
-    </a>
-    <button type="button" class="lg:hidden bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-blue-800 focus:outline-none focus:ring-2 focus-ring-inset focus:ring-white" aria-expanded="false" @click="isOpen = !isOpen">
-            <span class="sr-only">Open main menu</span>
-
-            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-    </button>
-    <nav class="mt-5 md:mt-0 hidden lg:block text-sm md:text-base">
-
-
-      <a class="hidden lg:inline px-2 md:px-4 py-3 hover:text-blue-700" href="https://xmrit.com/opensource/">Open Source</a>
-      <a class="px-2 md:px-4 py-3 hover:text-blue-700" href="https://xmrit.com/manual/">User Manual</a>
-      <a class="px-2 md:px-4 py-3 text-white bg-slate-800 hover:bg-blue-700 rounded-lg" href="https://xmrit.com/about/">What is This?</a>
-
-    </nav>
-
-    <div
-             x-cloak
-             x-show="isOpen"
-             x-transition:enter="duration-150 ease-out"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="duration-100 ease-in"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-95"
-             class="absolute top-0 inset-x-0 p-2 transition transform origin-top lg:hidden z-50">
-    <div class="rounded-lg shadow-md bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
-      <div class="px-5 pt-4 flex items-center justify-between">
-        <div>
-          <a href="/"><img class="h-8 w-auto" src="https://xmrit.com/xmrit-logo.png" alt=""></a>
-        </div>
-        <div class="-mr-2">
-          <button type="button" class="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-600" @click="isOpen = !isOpen">
-            <span class="sr-only">Close menu</span>
-
-            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="pt-5 pb-6">
-        <div class="px-2 space-y-1">
-          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/articles/">Articles</a>
-          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/about/">What is This?</a>
-          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/manual/">User Manual</a>
-          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white" href="/opensource/">Open Source</a>
-          <a class="block px-3 py-2 lg:px-2 lg:py-0 rounded-md text-base font-medium sm:font-normal text-gray-900 hover:bg-gray-50 lg:hover:text-purple-700 lg:hover:bg-white underline decoration-indigo-500 underline-offset-4" href="https://shop.xmrit.com/metrics-masterclass">Metrics Masterclass</a>
-        </div>
-        <div class="mt-6 px-5">
-          <a href="/t/" class="block text-center w-full py-3 px-4 rounded-md text-slate-900 border border-slate-900 hover:bg-blue-900 hover:text-white">Go To Tool</a>
-        </div>
-        <div class="mt-6 px-5">
-        </div>
-      </div>
-    </div>
-  </div>
-
-  </div>
-</header>
+  <body class='max-w-screen-2xl mx-auto'>
 <main class='relative bg-white'>
     <section class='grid grid-cols-12 grid-flow-row gap-1 md:gap-2 px-2 sm:px-6 mx-auto'>
 
-<div class="col-span-12 order-2 md:order-none flex flex-row items-end md:items-start md:col-span-4 lg:col-span-3 xl:col-span-2 px-2 md:mb-0">
-  <button class="px-4 py-2 text-white bg-blue-700 hover:bg-blue-600 rounded-lg font-normal" id="refresh-charts" type="button">Refresh Charts</button>
-</div>
 <div class="col-span-12 order-3 md:order-none md:col-span-6 xl:col-span-7 px-2" id="charts-global-buttons">
-  <div class="border border-gray-400 p-2 rounded-xl hidden">
-    <label class="mb-2 text-sm font-medium text-gray-900 hover:cursor-pointer" for="csv-file">Upload CSV file: </label>
-    <input class="text-sm text-slate-500 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:cursor-pointer hover:file:cursor-pointer hover:file:bg-blue-200" type="file" id="csv-file" accept=".csv">
-  </div>
-
-  <button class="px-4 py-2 text-white bg-slate-700 hover:bg-slate-600 rounded-lg font-normal" id="lock-limit-btn" type="button">Lock Limits</button>
+  <!-- Lock Limits button hidden but functionality preserved -->
+  <button class="px-4 py-2 text-white bg-slate-700 hover:bg-slate-600 rounded-lg font-normal hidden" id="lock-limit-btn" type="button">Lock Limits</button>
   <button class="text-slate-500 px-2 hidden lock-limit-remove">Remove Limits</button>
-  <button class="py-2 px-2 text-blue-800 hover:text-blue-600 font-normal" id="download-data" type="button">Download Data</button>
   <dialog id="lock-limit-dialog" class="p-6 overflow-y-auto bg-white rounded-xl shadow-xl max-w-prose">
     <div class="pb-2">
       <button class="text-red-500 pr-2" id="lock-limit-close">Close</button>
@@ -148,31 +71,26 @@
         <input type="number" class="lock-limit-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" data-limit="URL" placeholder="Enter the limit">
       </div>
     </div>
-    <div id="lock-limit-dataTable"></div>
+    <!-- Sigma data will be used for calculations instead of a data table -->
   </dialog>
-  <a class="text-slate-600 p-2 hover:text-slate-800" href="#instructions">Instructions &darr;</a>
 </div>
 <div class="col-span-12 order-4 md:order-none md:col-span-2 lg:col-span-3 flex flex-row items-start md:flex-row-reverse">
-  <button class="flex items-center justify-center px-4 py-2 text-blue-800 hover:text-blue-600 font-normal" id="share-link" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+  <!-- Share link button hidden but functionality preserved -->
+  <button class="flex items-center justify-center px-4 py-2 text-blue-800 hover:text-blue-600 font-normal hidden" id="share-link" type="button"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
       <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
     </svg>&nbsp;Share Link</button>
     <div class="px-4 py-2 tracking-tight text-green-600 hidden" id="data-copied-msg">Link copied to clipboard</div>
 </div>
 <div class="col-span-12 order-1 md:order-none px-2">
-  <div id="file-error" class="text-red-500 font-bold hidden"></div>
+  <!-- Removed file-error div as we now use Sigma Computing for data -->
   <div class="bg-red-50 border border-red-300 md:hidden rounded-lg p-3 mb-3">
     <p>XmRit! isn’t built for mobile use. Some functionality is degraded. For the full experience, load this on a tablet or computer.</p>
   </div>
 </div>
-<div class="col-span-12 order-5 md:order-none md:col-span-4 lg:col-span-3 xl:col-span-2 px-2">
-  <p class="text-sm lg:text-xs">
-    Edit your data below. Right click for more options.
-    <span class="text-red-600 text-sm lg:text-xs hidden" id="data-table-error">Dates should be in YYYY-MM-DD format (if copying from Excel, change date format settings!). </span>
-    <span class="font-semibold text-sm lg:text-xs hidden" id="duplicate-data-warning">Duplicate data detected in the table, results might be inaccurate. </p>
-  </p>
-  <div id="dataTable" class='lg:mt-2'></div>
+<div class="col-span-12 order-5 md:order-none md:col-span-4 lg:col-span-3 xl:col-span-2 px-2" id="sigma-config-container">
+  <!-- Sigma Computing plugin controls will appear here -->
 </div>
-<div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 px-2" id="charts-container">
+<div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 pl-0 pr-2" id="charts-container">
   <div class="flex flex-wrap lg:flex-nowrap gap-2 overflow-scroll">
     <div id="xplot-div" class="my-2 w-11/12 mx-auto flex flex-col justify-start items-center rounded-md box-border border border-gray-300">
       <div id="xplot" style="width: 600px;height:400px;"></div>
@@ -186,40 +104,9 @@
     </div>
   </div>
 </div>
-<div class="col-span-12 order-last mt-16 px-2 pb-10">
-  <div class="border-blue-300 border bg-sky-50 rounded-lg px-2 py-4 grid grid-cols-4 grid-flow-row">
-    <div class="col-span-4 md:col-span-2 prose p-2">
-      <h2 class='text-lg font-semibold' id="instructions">Quick Instructions</h2>
-      <ol>
-        <li>Paste and/or edit some data into the table.</li>
-        <li>Create a link to share charts with others, or download the charts as images.</li>
-        <li><em>Optional:</em> Add and adjust <strong>dividers</strong>, or edit <strong>table headers</strong> to update chart axis labels.</li>
-        <li>The full user manual is <a href="https://xmrit.com/manual/">available here</a>.</li>
-      </ol>
-    </div>
-    <div class="col-span-4 md:col-span-2 prose p-2">
-      <h2 class='text-lg font-semibold'>Privacy Notice</h2>
-      <p>XmRit is 100% browser based and obsessed about protecting your privacy. Your data is never sent to our servers. <a href="https://xmrit.com/privacy/">Read the full privacy policy</a> for details on analytics tracking.</p>
-      <h2 class='text-lg font-semibold'>Have feedback?</h2>
-      <p>Send us feedback <a href="https://forms.gle/93hdRwdjJYDxnvSx5" target="_blank">here</a>. We'd love to hear from you!</p>
-    </div>
-  </div>
-</div>
 
     </section>
-    </main><footer class="col-span-12 pt-8 px-4 border-t pb-5 mb-5 border-slate-400">
-  <div class="flex flex-col md:flex-row items-start justify-between">
-    <p class="text-gray-500 order-last md:order-first"><a class="hover:text-gray-800" href="https://xmrit.com/">Xmrit</a> by <a class="hover:text-purple-600" href="https://commoncog.com">Commoncog</a> &copy; 2024 // <br/> <a class="hover:text-gray-800" href="https://postcognito.com">Postcognito Pte Ltd</a></p>
-  <nav class="mb-5 md:mb-0 flex flex-col md:flex-row">
-    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="https://xmrit.com/articles/">Articles</a>
-    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="https://xmrit.com/opensource/">Open Source</a>
-    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="https://xmrit.com/integration/">Integration</a>
-    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0" href="https://forms.gle/93hdRwdjJYDxnvSx5">Send Feedback</a>
-    <a class="text-gray-500 hover:text-gray-800 my-1 md:my-0" href="https://xmrit.com/privacy/">Privacy Policy</a>
-    <a class="text-gray-500 hover:text-gray-800 mx-0 md:mx-3 my-1 md:my-0 underline decoration-indigo-500 underline-offset-4" href="https://shop.xmrit.com/metrics-masterclass">Metrics Masterclass</a>
-  </nav>
-  </div>
-</footer>
+    </main>
 <script type="module" src="/js/main2.ts" integrity=""></script>
   </body>
 </html>
