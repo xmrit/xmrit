@@ -1903,21 +1903,39 @@ function renderLimitLines(stats: _Stats) {
   });
 }
 
-function ceilToNearest500(val: number) {
-  return Math.ceil(val / 500) * 500;
+function getScalingFactor(range: number): number {
+  // Dynamically determine interval based on data range
+  if (range >= 1000) return 500;
+  if (range >= 500) return 100;
+  if (range >= 100) return 50;
+  if (range >= 50) return 10;
+  if (range >= 10) return 5;
+  return 1;
 }
-function floorToNearest500(val: number) {
-  return Math.floor(val / 500) * 500;
+
+function ceilToNearestInterval(val: number, interval: number) {
+  return Math.ceil(val / interval) * interval;
 }
+
+function floorToNearestInterval(val: number, interval: number) {
+  return Math.floor(val / interval) * interval;
+}
+
 function getXChartYAxisMinMax(stats: _Stats) {
+  // Calculate data range to determine appropriate scaling
+  const dataRange = stats.xchartMax - stats.xchartMin;
+  const interval = getScalingFactor(dataRange);
+  
   return [
-    floorToNearest500(
+    floorToNearestInterval(
       stats.xchartMin -
-        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES
+        dataRange * PADDING_FROM_EXTREMES,
+      interval
     ),
-    ceilToNearest500(
+    ceilToNearestInterval(
       stats.xchartMax +
-        (stats.xchartMax - stats.xchartMin) * PADDING_FROM_EXTREMES
+        dataRange * PADDING_FROM_EXTREMES,
+      interval
     ),
   ];
 }
@@ -1939,18 +1957,28 @@ function adjustChartAxis(stats: _Stats) {
   );
   xMax = dayjs(xMax).add(2, "day").valueOf();
 
+  // Calculate appropriate Y-axis bounds and interval
   const [xChartYMin, xChartYMax] = getXChartYAxisMinMax(stats);
+  const dataRange = stats.xchartMax - stats.xchartMin;
+  const interval = getScalingFactor(dataRange);
+  
+  // Calculate appropriate movement chart scaling
+  const mrDataRange = stats.mrchartMax;
+  const mrInterval = getScalingFactor(mrDataRange);
+  const mrChartMax = ceilToNearestInterval((1 + PADDING_FROM_EXTREMES) * stats.mrchartMax, mrInterval);
 
   xChart.setOption({
     yAxis: {
       min: xChartYMin,
       max: xChartYMax,
+      interval: interval, // Set dynamic interval
     },
     xAxis: { min: xMin, max: xMax },
   });
   mrChart.setOption({
     yAxis: {
-      max: ceilToNearest500((1 + PADDING_FROM_EXTREMES) * stats.mrchartMax),
+      max: mrChartMax,
+      interval: mrInterval, // Set dynamic interval
     },
     xAxis: { min: xMin, max: xMax },
   });
