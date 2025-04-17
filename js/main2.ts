@@ -1790,7 +1790,7 @@ function renderLimitLines(stats: _Stats) {
           show: false,
         },
         label: {
-          formatter: showLabel && `${statisticY}`,
+          formatter: showLabel && `${Number(statisticY).toFixed(2)}`,
           fontSize: 11,
           color: "#000",
         },
@@ -1972,6 +1972,9 @@ function adjustChartAxis(stats: _Stats) {
       min: xChartYMin,
       max: xChartYMax,
       interval: interval, // Set dynamic interval
+      axisLabel: {
+        formatter: (value) => Number(value).toFixed(2)
+      }
     },
     xAxis: { min: xMin, max: xMax },
   });
@@ -1979,6 +1982,9 @@ function adjustChartAxis(stats: _Stats) {
     yAxis: {
       max: mrChartMax,
       interval: mrInterval, // Set dynamic interval
+      axisLabel: {
+        formatter: (value) => Number(value).toFixed(2)
+      }
     },
     xAxis: { min: xMin, max: xMax },
   });

@@ -41,6 +41,7 @@ const yAxis = {
     fontSize: 11,
     color: "#000",
     hideOverlap: true,
+    formatter: (value) => Number(value).toFixed(2),
   },
   interval: 500,
   nameLocation: "middle",
@@ -75,9 +76,10 @@ const mapDataValueToChartDataPoint = (dv: DataValue) => ({
     color: dataLabelsStatusColor(dv.status),
     fontWeight: "bold",
     fontSize: 10,
+    formatter: Number(dv.value).toFixed(2),
   },
   tooltip: {
-    formatter: `${dayjs(dv.x).format("ddd, D MMM YYYY")}:<br/> ${dv.value}`,
+    formatter: `${dayjs(dv.x).format("ddd, D MMM YYYY")}:<br/> ${Number(dv.value).toFixed(2)}`,
   },
 });
 
