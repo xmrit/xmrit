@@ -1,15 +1,22 @@
 import chroma from "chroma-js";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import duration from "dayjs/plugin/duration";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
 // Seasonality
+dayjs.extend(customParseFormat);
 dayjs.extend(duration);
 dayjs.extend(quarterOfYear);
 
 import { init as initEChart } from "echarts";
 import type { EChartsType } from "echarts";
-import Handsontable from "handsontable";
-import { CellMeta } from "handsontable/settings";
+import type { ColDef } from "ag-grid-community";
+import {
+  createXmritGrid,
+  extendDateSeries,
+  ClickableHeader,
+  type XmritGrid,
+} from "./ag-grid-wrapper";
 
 import lz77 from "./lz77";
 
@@ -164,9 +171,8 @@ const DUMMY_DATA: DataValue[] = INITIAL_VALUES.map(function (el, i) {
 
 // This is the state of the app.
 const state = {
-  // tableData, xLabel and yLabel is set by the handsontable (the table rendered onscreen).
-  // for handsontable to be reactive, use hot.updateSettings({ ... }). Don't just use assignment.
-  tableData: [] as DataValue[], // handsontable data. Might contain null values.
+  // tableData, xLabel and yLabel is set by the grid (the table rendered onscreen).
+  tableData: [] as DataValue[], // grid data. Might contain null values.
   lockedLimitBaseData: [] as DataValue[], // data for the locked limit lines
   xLabel: "Date",
   yLabel: "Value",
@@ -1396,11 +1402,11 @@ screen.orientation.addEventListener("change", (e) => {
   redraw("changeOrientation");
 });
 
-let hot: Handsontable;
-let lockedLimitHot: Handsontable;
-let deseasonaliseHot: Handsontable;
-let seasonalFactorsHot: Handsontable;
-let trendHot: Handsontable;
+let grid: XmritGrid;
+let lockedLimitGrid: XmritGrid;
+let deseasonaliseGrid: XmritGrid;
+let seasonalFactorsGrid: XmritGrid;
+let trendGrid: XmritGrid;
 
 let dTableColors = [];
 
@@ -1424,74 +1430,33 @@ function updateDTableSeasonalFactorMapping() {
     }
   });
 
-  if (deseasonaliseHot) {
-    deseasonaliseHot.updateData(state.seasonalFactorData);
+  if (deseasonaliseGrid) {
+    deseasonaliseGrid.updateData(state.seasonalFactorData);
   }
 }
 
-const _seasonalDataCellRenderer = (
-  instance,
-  td,
-  row,
-  col,
-  prop,
-  value,
-  cellProperties
-) => {
-  // This renders the text
-  Handsontable.renderers.TextRenderer(
-    instance,
-    td,
-    row,
-    col,
-    prop,
-    value,
-    cellProperties
-  );
-
+// AG Grid cellStyle callbacks for seasonal coloring
+const seasonalDataCellStyle = (params: any) => {
+  const row = params.node.rowIndex;
   if (
     row < state.seasonalFactorData.length - 1 &&
     state.seasonalFactorData[row]
   ) {
     const sfIndex = state.seasonalFactorData[row].seasonalFactor - 1;
-    td.style.background = dTableColors[sfIndex] ?? "salmon";
-    td.style.borderBottomColor = dTableColors[sfIndex];
+    return { background: dTableColors[sfIndex] ?? "salmon", 
+             borderBottomColor: dTableColors[sfIndex]};
   }
+  return {};
 };
 
-const _seasonalFactorCellRenderer = (
-  instance,
-  td,
-  row,
-  col,
-  prop,
-  value,
-  cellProperties
-) => {
-  // This renders the text
-  Handsontable.renderers.TextRenderer(
-    instance,
-    td,
-    row,
-    col,
-    prop,
-    value,
-    cellProperties
-  );
-
-  td.style.background = dTableColors[row];
-  td.style.borderBottomColor = dTableColors[row];
+const seasonalFactorCellStyle = (params: any) => {
+  const row = params.node.rowIndex;
+  const bg = dTableColors[row];
+  if (bg) {
+    return { background: bg, borderBottomColor: bg };
+  }
+  return {};
 };
-
-// maps function to a lookup string
-Handsontable.renderers.registerRenderer(
-  "seasonalDataRenderer",
-  _seasonalDataCellRenderer
-);
-Handsontable.renderers.registerRenderer(
-  "seasonalFactorRenderer",
-  _seasonalFactorCellRenderer
-);
 
 function lockLimits() {
   const lockedLimits = calculateLockedLimits(); // calculate locked limits from the table
@@ -1530,7 +1495,60 @@ function lockLimits() {
   redraw("addLockLimit");
 }
 
-function initialiseHandsOnTable() {
+function dateValueSetter(params: any): boolean {
+  const val = params.newValue;
+  if (!val || val === "") {
+    params.data.x = null;
+    return true;
+  }
+  const d = dayjs(val, "YYYY-MM-DD", true);
+  if (!d.isValid()) {
+    const errorMsg = document.getElementById("data-table-error");
+    errorMsg?.classList.remove("hidden");
+    return false;
+  }
+  document.getElementById("data-table-error")?.classList.add("hidden");
+  params.data.x = val;
+  return true;
+}
+
+function numericValueParser(params: any) {
+  if (params.newValue === null || params.newValue === undefined || params.newValue === "") {
+    return null;
+  }
+  const val = parseFloat(String(params.newValue).replace(/[^0-9.\-]/g, ""));
+  return isNaN(val) ? null : val;
+}
+
+function makeDateCol(): ColDef {
+  return {
+    field: "x",
+    valueSetter: dateValueSetter,
+    cellEditor: "agTextCellEditor",
+  };
+}
+
+function makeValueCol(): ColDef {
+  return {
+    field: "value",
+    valueParser: numericValueParser,
+  };
+}
+
+// Duplicate tracking set for main table
+let duplicateRows = new Set<number>();
+
+/** Sync all row data from an AG Grid instance back to a state array.
+ *  Returns the synced array (same reference if possible, new array if rows were added/removed). */
+function syncGridToState<T>(grid: XmritGrid, currentState: T[]): T[] {
+  const rowData: T[] = [];
+  grid.api.forEachNode((node) => {
+    if (node.data) rowData.push(node.data);
+  });
+  return rowData;
+}
+
+function initialiseGrids() {
   const seasonalFactorsDataTable = document.querySelector(
     "#seasonal-factors-dataTable"
   ) as HTMLDivElement;
@@ -1545,354 +1563,208 @@ function initialiseHandsOnTable() {
   ) as HTMLDivElement;
   const table = document.querySelector("#dataTable") as HTMLDivElement;
 
-  trendHot = trendDataTable ? new Handsontable(trendDataTable, {
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
-    data: state.trendData,
-    dataSchema: { x: null, value: null },
-    columns: [
-      {
-        data: "x",
-        type: "date",
-        dateFormat: "YYYY-MM-DD",
-        validator: (value, callback) => {
-          if (!value) {
-            // if null, "", or undefined
-            callback(true);
-            return;
-          }
-
-          let d = new Date(fromDateStr(value));
-          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
-          // callback(true) if date != 'Invalid Date'
-          callback(d instanceof Date && !isNaN(d.getTime()));
-        },
+  // ── Trend table ──
+  if (trendDataTable) {
+    trendGrid = createXmritGrid({
+      element: trendDataTable,
+      data: state.trendData,
+      dataSchema: { x: null, value: null } as any,
+      columnDefs: [makeDateCol(), makeValueCol()],
+      colHeaders: [state.xLabel, state.yLabel],
+      contextMenu: true,
+      minSpareRows: true,
+      onCellValueChanged: (_event) => {
+        state.trendData = syncGridToState(trendGrid, state.trendData);
+        calculateTrendStats();
       },
-      { data: "value", type: "numeric" },
-    ],
-    colHeaders: [state.xLabel, state.yLabel],
-    // Show context menu to enable removing rows.
-    contextMenu: true,
-    allowRemoveColumn: false,
-    minSpareRows: 1,
-    height: "auto",
-    stretchH: "all",
-    fillHandle: {
-      autoInsertRow: true,
-      direction: "vertical",
-    },
-    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
-      return autofillTable(selectionData, sourceRange, targetRange, direction);
-    },
-    beforePaste(data, coords) {
-      return beforePasteTable(data, coords);
-    },
-    afterChange(changes, source) {
-      if (source === "loadData") {
-        return;
-      }
-      calculateTrendStats();
-    },
-    afterValidate(isValid, value, row, prop, source) {
-      const errorMsg = document.getElementById("data-table-error");
-      if (isValid) {
-        errorMsg.classList.add("hidden");
-        return;
-      }
-      errorMsg.classList.remove("hidden");
-      return false;
-    },
-  }) : undefined;
+    });
+  }
 
-  seasonalFactorsHot = seasonalFactorsDataTable ? new Handsontable(seasonalFactorsDataTable, {
-    colHeaders: ["Seasonal Factors"],
-    data: state.seasonalFactorTableData,
-    rowHeaders: true,
-    // colHeaders: sfCols,
-    // Show context menu to enable removing rows.
-    contextMenu: true,
-    allowRemoveColumn: false,
-    height: "auto",
-    stretchH: "all",
-    allowInsertRow: false,
-    allowInsertColumn: false,
-    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
-      return autofillTable(selectionData, sourceRange, targetRange, direction);
-    },
-    beforePaste(data, coords) {
-      return beforePasteTable(data, coords);
-    },
-    afterChange(changes, source) {
-      if (source === "edit" && state.isShowingDeseasonalisedData) {
-        redraw("updateDeseasonalisedData");
-      }
-    },
-    afterValidate(isValid, value, row, prop, source) {
-      const errorMsg = document.getElementById("data-table-error");
-      if (isValid) {
-        errorMsg.classList.add("hidden");
-        return;
-      }
-      errorMsg.classList.remove("hidden");
-      return false;
-    },
-    // the `cells` options overwrite all other options
-    cells(row, col, prop) {
-      const cellProperties: CellMeta = {
-        renderer: "seasonalFactorRenderer",
-      };
-      if (row === 0) {
-        cellProperties.type = "numeric";
-      }
-      return cellProperties;
-    },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
-  }) : undefined;
-
-  deseasonaliseHot = deseasonaliseDataTable ? new Handsontable(deseasonaliseDataTable, {
-    data: state.seasonalFactorData,
-    dataSchema: { x: null, value: null },
-    columns: [
-      {
-        data: "x",
-        type: "date",
-        dateFormat: "YYYY-MM-DD",
-        validator: (value, callback) => {
-          if (!value) {
-            // if null, "", or undefined
-            callback(true);
-            return;
-          }
-
-          let d = new Date(fromDateStr(value));
-          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
-          // callback(true) if date != 'Invalid Date'
-          callback(d instanceof Date && !isNaN(d.getTime()));
+  // ── Seasonal Factors table ──
+  if (seasonalFactorsDataTable) {
+    seasonalFactorsGrid = createXmritGrid({
+      element: seasonalFactorsDataTable,
+      data: state.seasonalFactorTableData,
+      columnDefs: [
+        {
+          headerName: "value",
+          valueGetter: (params: any) => params.data?.[0],
+          valueSetter: (params: any) => {
+            params.data[0] = parseFloat(params.newValue) || null;
+            return true;
+          },
+          cellStyle: seasonalFactorCellStyle,
         },
+      ],
+      colHeaders: ["Seasonal Factors"],
+      contextMenu: true,
+      allowInsertRow: false,
+      rowHeaders: true,
+      minSpareRows: false,
+      onCellValueChanged: (_event) => {
+        state.seasonalFactorTableData = syncGridToState(seasonalFactorsGrid, state.seasonalFactorTableData);
+        if (state.isShowingDeseasonalisedData) {
+          redraw("updateDeseasonalisedData");
+        }
       },
-      { data: "value", type: "numeric" },
-      { data: "seasonalFactor", type: "numeric" },
-    ],
-    colHeaders: [state.xLabel, state.yLabel, "Season"],
-    // Show context menu to enable removing rows.
-    contextMenu: true,
-    allowRemoveColumn: false,
-    minSpareRows: 1,
-    height: "auto",
-    stretchH: "all",
-    fillHandle: {
-      autoInsertRow: true,
-      direction: "vertical",
-    },
-    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
-      return autofillTable(selectionData, sourceRange, targetRange, direction);
-    },
-    afterChange(changes, source) {
-      // Check range of values entered
-      // get range of data in deseason table
-      const data = sortDataValues(
-        state.seasonalFactorData.filter((d) => d.x != null)
-      );
-      const startDate = dayjs(data[0].x);
-      const endDate = dayjs(data[data.length - 1].x);
+    });
+  }
 
-      // Get selected period
-      const selectedPeriod = (document.querySelector("#period-select") as HTMLSelectElement).value;
+  // ── Deseasonalise table ──
+  if (deseasonaliseDataTable) {
+    deseasonaliseGrid = createXmritGrid({
+      element: deseasonaliseDataTable,
+      data: state.seasonalFactorData,
+      dataSchema: { x: null, value: null } as any,
+      columnDefs: [
+        { ...makeDateCol(), cellStyle: seasonalDataCellStyle },
+        { ...makeValueCol(), cellStyle: seasonalDataCellStyle },
+        {
+          field: "seasonalFactor",
+          valueParser: numericValueParser,
+          cellStyle: seasonalDataCellStyle,
+        },
+      ],
+      colHeaders: [state.xLabel, state.yLabel, "Season"],
+      // Show context menu to enable removing rows.
+      contextMenu: true,
+      minSpareRows: true,
+      onCellValueChanged: (_event) => {
+        state.seasonalFactorData = syncGridToState(deseasonaliseGrid, state.seasonalFactorData);
+        // Check range of values entered
+        // get range of data in deseason table
+        const data = sortDataValues(
+          state.seasonalFactorData.filter((d) => d.x != null)
+        );
+        if (data.length < 2) return;
+        const startDate = dayjs(data[0].x);
+        const endDate = dayjs(data[data.length - 1].x);
 
+        // Get selected period
+        const selectedPeriod = (document.querySelector("#period-select") as HTMLSelectElement).value;
+        
       // Calculate difference based on selected period
-      const periodDiff = Math.abs(startDate.diff(endDate, selectedPeriod as any, true));
+        const periodDiff = Math.abs(startDate.diff(endDate, selectedPeriod as any, true));
 
-      // Show warning if less than one period
-      if (periodDiff < 1) {
-        showElement(document.querySelector("#deseason-warn-1"));
-      } else {
-        hideElement(document.querySelector("#deseason-warn-1"));
-      }
+        // Show warning if less than one period
+        if (periodDiff < 1) {
+          showElement(document.querySelector("#deseason-warn-1"));
+        } else {
+          hideElement(document.querySelector("#deseason-warn-1"));
+        }
 
       // Show warning if exactly one period
-      if (periodDiff === 1) {
-        showElement(document.querySelector("#deseason-warn-2"));
-      } else {
-        hideElement(document.querySelector("#deseason-warn-2"));
-      }
+        if (periodDiff === 1) {
+          showElement(document.querySelector("#deseason-warn-2"));
+        } else {
+          hideElement(document.querySelector("#deseason-warn-2"));
+        }
 
-      if (source === "edit") {
         updateSeasonalFactors();
-      }
-    },
-    afterValidate(isValid, value, row, prop, source) {
-      const errorMsg = document.getElementById("data-table-error");
-      if (isValid) {
-        errorMsg.classList.add("hidden");
-        return;
-      }
-      errorMsg.classList.remove("hidden");
-      return false;
-    },
-    cells(row, col) {
-      const cellProperties: CellMeta = {};
-
-      cellProperties.renderer = "seasonalDataRenderer"; // uses lookup map
-
-      return cellProperties;
-    },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
-  }) : undefined;
-
-  lockedLimitHot = lockedLimitDataTable ? new Handsontable(lockedLimitDataTable, {
-    data: state.lockedLimitBaseData,
-    dataSchema: { x: null, value: null },
-    columns: [
-      {
-        data: "x",
-        type: "date",
-        dateFormat: "YYYY-MM-DD",
-        validator: (value, callback) => {
-          if (!value) {
-            // if null, "", or undefined
-            callback(true);
-            return;
-          }
-
-          let d = new Date(fromDateStr(value));
-          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
-          // callback(true) if date != 'Invalid Date'
-          callback(d instanceof Date && !isNaN(d.getTime()));
-        },
       },
-      { data: "value", type: "numeric" },
-    ],
-    colHeaders: [state.xLabel, state.yLabel],
-    // Show context menu to enable removing rows.
-    contextMenu: true,
-    allowRemoveColumn: false,
-    minSpareRows: 1,
-    height: "auto",
-    stretchH: "all",
-    fillHandle: {
-      autoInsertRow: true,
-      direction: "vertical",
-    },
-    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
-      return autofillTable(selectionData, sourceRange, targetRange, direction);
-    },
-    beforePaste(data, coords) {
-      return beforePasteTable(data, coords);
-    },
-    afterChange(changes, source) {
-      if (source === "loadData") {
-        return;
-      }
-      setLockedLimitInputs(true);
-    },
-    afterValidate(isValid, value, row, prop, source) {
-      const errorMsg = document.getElementById("data-table-error");
-      if (isValid) {
-        errorMsg.classList.add("hidden");
-        return;
-      }
-      errorMsg.classList.remove("hidden");
-      return false;
-    },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
-  }) : undefined;
+    });
+  }
 
-  hot = new Handsontable(table, {
+  // ── Locked Limit table ──
+  if (lockedLimitDataTable) {
+    lockedLimitGrid = createXmritGrid({
+      element: lockedLimitDataTable,
+      data: state.lockedLimitBaseData,
+      dataSchema: { x: null, value: null } as any,
+      columnDefs: [makeDateCol(), makeValueCol()],
+      colHeaders: [state.xLabel, state.yLabel],
+      // Show context menu to enable removing rows.
+      contextMenu: true,
+      minSpareRows: true,
+      onCellValueChanged: (_event) => {
+        state.lockedLimitBaseData = syncGridToState(lockedLimitGrid, state.lockedLimitBaseData);
+        setLockedLimitInputs(true);
+      },
+    });
+  }
+
+  // ── Main data table ──
+  const onHeaderClick = (colId: string, displayName: string) => {
+    const newColName = prompt("Insert a new column name", displayName);
+    if (newColName) {
+      const headers = grid.getColHeaders();
+      const colIndex = colId === "x" ? 0 : 1;
+      headers[colIndex] = newColName;
+      grid.updateSettings({ colHeaders: headers });
+      if (colIndex === 0) {
+        state.xLabel = newColName;
+      } else {
+        state.yLabel = newColName;
+      }
+      redraw("editColumnName");
+    }
+  };
+
+  grid = createXmritGrid({
+    element: table,
     data: state.tableData,
-    dataSchema: { x: null, value: null },
-    columns: [
+    dataSchema: { x: null, value: null } as any,
+    columnDefs: [
       {
-        data: "x",
-        type: "date",
-        dateFormat: "YYYY-MM-DD",
-        validator: (value, callback) => {
-          if (!value) {
-            // if null, "", or undefined
-            callback(true);
-            return;
-          }
-
-          let d = new Date(fromDateStr(value));
-          // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript#1353711
-          // callback(true) if date != 'Invalid Date'
-          callback(d instanceof Date && !isNaN(d.getTime()));
+        ...makeDateCol(),
+        headerComponent: ClickableHeader,
+        headerComponentParams: { onHeaderClick },
+        cellClassRules: {
+          duplicate: (params: any) => duplicateRows.has(params.node.rowIndex),
         },
       },
-      { data: "value", type: "numeric" },
+      {
+        ...makeValueCol(),
+        headerComponent: ClickableHeader,
+        headerComponentParams: { onHeaderClick },
+      },
     ],
     colHeaders: [
       state.xLabel ?? "Date",
       state.yLabel === "Value" ? "Value (✏️)" : state.yLabel,
     ],
-    // Editable column header: https://github.com/handsontable/handsontable/issues/1980
-    afterOnCellMouseDown: function (e, coords) {
-      if (coords.row !== -1) {
-        return;
-      }
-      let newColName = prompt(
-        "Insert a new column name",
-        this.getColHeader()[coords.col]
-      );
-      if (newColName) {
-        let colHeaders = this.getColHeader();
-        colHeaders[coords.col] = newColName;
-        this.updateSettings({
-          colHeaders,
-        });
-        if (coords.col == 0) {
-          state.xLabel = newColName;
-        } else {
-          state.yLabel = newColName;
-        }
-        // Redraw
-        redraw("editColumnName");
-      }
-    },
     // Show context menu to enable removing rows.
     contextMenu: true,
-    allowRemoveColumn: false,
-    minSpareRows: 1,
-    height: "auto",
-    stretchH: "all",
-    fillHandle: {
-      autoInsertRow: true,
-      direction: "vertical",
-    },
-    beforeAutofill(selectionData, sourceRange, targetRange, direction) {
-      return autofillTable(selectionData, sourceRange, targetRange, direction);
-    },
-    beforePaste(data, coords) {
-      return beforePasteTable(data, coords);
-    },
-    beforeChange(changes, source) {
-      let xOnly = state.xdata.map((d) => d.x);
-      changes.forEach(([row, prop, oldVal, newVal], idx) => {
-        if (prop == "x") {
-          xOnly[row] = newVal;
-        }
-        if (prop == "value") {
-          // force float by removing special characters
-          changes[idx][3] = forceFloat(newVal);
-        }
-      });
-      checkDuplicatesInTable(xOnly, this);
-    },
-    afterChange(changes, source) {
-      if (source == "loadData") {
-        return;
-      }
+    minSpareRows: true,
+    onCellValueChanged: (event) => {
+      // Sync grid → state (captures new rows from spare row)
+      state.tableData = syncGridToState(grid, state.tableData);
+      // Check for duplicates after any change
+      const allData: string[] = state.tableData.map((d) => d.x ?? null);
+      checkDuplicatesInTable(allData);
       redraw("editTableData");
     },
-    afterValidate(isValid, value, row, prop, source) {
-      const errorMsg = document.getElementById("data-table-error");
-      if (isValid) {
-        errorMsg.classList.add("hidden");
-        return;
-      }
-      errorMsg.classList.remove("hidden");
-      return false;
-    },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
   });
+
+  // ── "Extend dates" button handlers ──
+  document.getElementById("extend-dates-main")?.addEventListener("click", () => {
+    handleExtendDates(grid, "tableData");
+  });
+  document.getElementById("extend-dates-trend")?.addEventListener("click", () => {
+    handleExtendDates(trendGrid, "trendData");
+  });
+  document.getElementById("extend-dates-deseason")?.addEventListener("click", () => {
+    handleExtendDates(deseasonaliseGrid, "seasonalFactorData");
+  });
+  document.getElementById("extend-dates-locked")?.addEventListener("click", () => {
+    handleExtendDates(lockedLimitGrid, "lockedLimitBaseData");
+  });
+}
+
+function handleExtendDates(grid: XmritGrid, stateKey: "tableData" | "trendData" | "seasonalFactorData" | "lockedLimitBaseData") {
+  if (!grid) return;
+  const data = state[stateKey] as any[];
+  const dates = data.filter((d: any) => d.x).map((d: any) => d.x);
+  if (dates.length === 0) return;
+  const countStr = prompt("How many rows to add?", "5");
+  if (!countStr) return;
+  const count = parseInt(countStr, 10);
+  if (isNaN(count) || count <= 0) return;
+  const newDates = extendDateSeries(dates, count);
+  const newRows = newDates.map((d) => ({ x: d, value: null }));
+  grid.api.applyTransaction({ add: newRows });
+  // Sync back to state
+  (state as any)[stateKey] = syncGridToState(grid, data);
 }
 
 // LOGIC ON PAGE LOAD
@@ -2290,7 +2162,7 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
   });
 
   // Data table
-  initialiseHandsOnTable();
+  initialiseGrids();
 
   // CSV data management
   const csvFile = document.getElementById("csv-file") as HTMLInputElement;
@@ -2340,7 +2212,7 @@ document.addEventListener("DOMContentLoaded", async function (_e) {
       state.yLabel = yLabel;
       state.tableData = xdata;
       state.lockedLimitBaseData = deepClone(state.tableData);
-      hot.updateSettings({
+      grid.updateSettings({
         data: xdata,
         colHeaders: [xLabel, yLabel],
       });
@@ -2562,121 +2434,17 @@ function setLockedLimitInputs(updateInputValue: boolean) {
   ).placeholder = `${lv.URL}`;
 }
 
-// An implementation of excel drag-to-extend-series for handsontable
-function autofillTable(selectionData, sourceRange, targetRange, direction) {
-  if (sourceRange.from.col == 1) {
-    // use default behaviour if its the data column
-    // if targetRange is larger than source range, the selected data will be repeated.
-    return selectionData;
-  }
-
-  // most likely, the user is trying to extend the current pattern.
-  // if there is a pattern, we will try to extend the pattern
-  // otherwise we will just use default behaviour.
-  let dateArray = selectionData.map((x) => new Date(fromDateStr(x[0])));
-  let difference = 86400000; // one day
-  if (dateArray.length >= 2) {
-    difference = dateArray[1].valueOf() - dateArray[0].valueOf();
-    for (let i = 2; i < dateArray.length; i++) {
-      if (dateArray[i].valueOf() - dateArray[i - 1].valueOf() != difference) {
-        // pattern is broken
-        return selectionData;
-      }
-    }
-  }
-
-  let result = [];
-  // If only one row is selected, we increment by one day only
-  if (dateArray.length < 2) {
-    if (direction == "down") {
-      result = dateArray.map(
-        (x) => new Date(new Date(x.valueOf()).setDate(x.getDate() + 1))
-      );
-      for (
-        let i = result.length;
-        i <= targetRange.to.row - targetRange.from.row;
-        i++
-      ) {
-        let cd = result[result.length - 1];
-        result.push(new Date(new Date(cd.valueOf()).setDate(cd.getDate() + 1)));
-      }
-    } else if (direction == "up") {
-      result = dateArray.map(
-        (x) => new Date(new Date(x.valueOf()).setDate(x.getDate() - 1))
-      );
-      for (
-        let i = result.length;
-        i <= targetRange.to.row - targetRange.from.row;
-        i++
-      ) {
-        let cd = result[0];
-        // much more expensive than downwards extension, but user should rarely hit this...
-        result = [
-          new Date(new Date(cd.valueOf()).setDate(cd.getDate() - 1)),
-          ...result,
-        ];
-      }
-    }
-    return result.map((x) => [toDateStr(x)]);
-  }
-
-  // If more than one row was selected we increment by computed difference
-  // Note that this doesn't handle daylight savings time, so two days out of
-  // every year this will give wrong results.
-  if (direction == "down") {
-    result = dateArray.map(
-      (x) => new Date(x.valueOf() + dateArray.length * difference)
-    );
-    for (
-      let i = result.length;
-      i <= targetRange.to.row - targetRange.from.row;
-      i++
-    ) {
-      result.push(new Date(result[result.length - 1].valueOf() + difference));
-    }
-  } else if (direction == "up") {
-    result = dateArray.map(
-      (x) => new Date(x.valueOf() - dateArray.length * difference)
-    );
-    for (
-      let i = result.length;
-      i <= targetRange.to.row - targetRange.from.row;
-      i++
-    ) {
-      // much more expensive than downwards extension, but user should rarely hit this...
-      result = [new Date(result[0].valueOf() - difference), ...result];
-    }
-  }
-  return result.map((x) => [toDateStr(x)]);
-}
-
-// Modifying paste behaviour
-function beforePasteTable(data, coords) {
-  if (coords.length > 1) return;
-  let coord = coords[0];
-  // if selected area has more rows than the data, we add empty '' to the end of data to simulate clearing this rows
-  // This change handles the common edge case where user copy, say from other sources, and paste a smaller set of data
-  // than the one currently exists in the table.
-  // The default behaviour of the CopyPaste plugin is to repeat the data until the end of the selected area,
-  // which causes wrong calculation (and crossing lines in the chart) due to repeated data at the end.
-  for (let i = coord.startRow + data.length; i <= coord.endRow; i++) {
-    // endRow is inclusive.
-    data.push(["", ""]);
-  }
-  return;
-}
 
 // Check duplicate in the x value (first column) of the table and set background color accordingly
-function checkDuplicatesInTable(arr: string[], tableInstance) {
-  let seen = {};
+function checkDuplicatesInTable(arr: string[]) {
+  let seen: Record<string, boolean> = {};
   let isDuplicateDetected = false;
+  duplicateRows = new Set<number>();
   arr.forEach((el, idx) => {
     if (!el) return; // null or ""
     if (el in seen) {
-      tableInstance.setCellMeta(idx, 0, "className", "duplicate");
+      duplicateRows.add(idx);
       isDuplicateDetected = true;
-    } else {
-      tableInstance.setCellMeta(idx, 0, "className", "");
     }
     seen[el] = true;
   });
@@ -2684,9 +2452,14 @@ function checkDuplicatesInTable(arr: string[], tableInstance) {
   if (isDuplicateDetected) {
     document
       .getElementById("duplicate-data-warning")
-      .classList.remove("hidden");
+      ?.classList.remove("hidden");
   } else {
-    document.getElementById("duplicate-data-warning").classList.add("hidden");
+    document.getElementById("duplicate-data-warning")?.classList.add("hidden");
+  }
+
+  // Refresh the date column to update cell class rules
+  if (grid?.api) {
+    grid.api.refreshCells({ force: true, columns: ["x"] });
   }
 }
 
@@ -2974,10 +2747,10 @@ function renderChartGraphics(stats: _Stats) {
 function promptNewColumnName() {
   let newColName = prompt("Insert a new column name", state.yLabel);
   if (newColName) {
-    let colHeaders = hot.getColHeader();
+    let colHeaders = grid.getColHeaders();
     colHeaders[1] = newColName;
     state.yLabel = newColName;
-    hot.updateSettings({
+    grid.updateSettings({
       colHeaders,
     });
     redraw("editChartTitle");
@@ -3003,8 +2776,8 @@ function updateSeasonalFactors() {
     hideElement(document.querySelector("#deseason-warn-3"));
   }
 
-  if (seasonalFactorsHot != null) {
-    seasonalFactorsHot.updateData(state.seasonalFactorTableData);
+  if (seasonalFactorsGrid != null) {
+    seasonalFactorsGrid.updateData(state.seasonalFactorTableData);
     updateDTableSeasonalFactorMapping();
   }
 }
@@ -3025,7 +2798,7 @@ function updateDeseasonalisedData() {
 
 function resetDeseasonalisedDialogTable() {
   state.seasonalFactorData = deepClone(state.tableData);
-  deseasonaliseHot.updateSettings({
+  deseasonaliseGrid.updateSettings({
     data: state.seasonalFactorData,
   });
   updateDTableSeasonalFactorMapping();
@@ -3035,7 +2808,7 @@ function resetDeseasonalisedDialogTable() {
 function resetLockedLimitDialogTable() {
   // let the locked limit data reflect the latest x data if locked limits are not currently active
   updateInPlace(state.lockedLimitBaseData, state.xdata);
-  lockedLimitHot.updateSettings({
+  lockedLimitGrid.updateSettings({
     data: state.lockedLimitBaseData,
     colHeaders: [state.xLabel, state.yLabel],
   });
@@ -3043,7 +2816,7 @@ function resetLockedLimitDialogTable() {
 
 function resetTrendDialogTable() {
   state.trendData = deepClone(state.tableData);
-  trendHot.updateData(state.trendData);
+  trendGrid.updateData(state.trendData);
   state.trendLines = createTrendlines(state.regressionStats, state.trendData);
 }
 

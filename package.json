@@ -12,9 +12,10 @@
     "tailwindcss": "^3.4.11"
   },
   "dependencies": {
+    "ag-grid-community": "^35.1.0",
+    "chroma-js": "^3.2.0",
     "dayjs": "^1.11.10",
     "echarts": "^5.5.1",
-    "handsontable": "^14.3.0",
     "typescript": "^5.4.5"
   }
 }

@@ -15,7 +15,7 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/css/styles.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+  <!-- AG Grid theme is applied via JS module import -->
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
   <link rel="icon" href="https://xmrit.com/favicon.ico">
@@ -219,7 +219,9 @@
                   <button class="p-1 text-blue-700 hover:bg-blue-100 rounded-md text-sm" id="deseason-reset-data"
                     type="button">Replace from table</button>
                 </div>
-                <div id="deseason-dataTable"></div>
+                <div id="deseason-dataTable" class="ag-theme-alpine"></div>
+                <button class="mt-1 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 rounded" id="extend-dates-deseason"
+                  type="button">+ Extend dates</button>
               </div>
 
 
@@ -230,7 +232,7 @@
                   <button class="p-1 text-blue-700 hover:bg-blue-100 rounded-md text-sm" id="deseason-reset-factors"
                     type="button">Recalculate seasonal factors</button>
                 </div>
-                <div id="seasonal-factors-dataTable"></div>
+                <div id="seasonal-factors-dataTable" class="ag-theme-alpine"></div>
               </div>
 
             </div>
@@ -297,7 +299,9 @@
             <button class="p-1 text-blue-700 hover:bg-blue-100 rounded-md text-sm" id="lock-limit-reset-data"
               type="button">Reset data (from table)</button>
           </div>
-          <div id="lock-limit-dataTable"></div>
+          <div id="lock-limit-dataTable" class="ag-theme-alpine"></div>
+          <button class="mt-1 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 rounded" id="extend-dates-locked"
+            type="button">+ Extend dates</button>
         </div>
         <div id="trend-backdrop" class="modal-backdrop"></div>
         <div id="trend-dialog" class="modal p-6 overflow-y-auto bg-white rounded-xl shadow-xl max-w-prose">
@@ -351,7 +355,9 @@
                 type="button">
                 Reset data (from table)</button>
             </div>
-            <div id="trend-dataTable"></div>
+            <div id="trend-dataTable" class="ag-theme-alpine"></div>
+            <button class="mt-1 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 rounded" id="extend-dates-trend"
+              type="button">+ Extend dates</button>
 
           </div>
         </div>
@@ -400,7 +406,9 @@
             table, results might be inaccurate.
         </p>
         </p>
-        <div id="dataTable" class='lg:mt-2'></div>
+        <div id="dataTable" class='lg:mt-2 ag-theme-alpine'></div>
+        <button class="mt-1 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 rounded" id="extend-dates-main"
+          type="button">+ Extend dates</button>
       </div>
       <div class="col-span-12 order-6 md:order-none md:col-span-8 lg:col-span-9 xl:col-span-10 px-2"
         id="charts-container">
