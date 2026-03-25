@@ -1547,6 +1547,7 @@ function initialiseHandsOnTable() {
 
   trendHot = trendDataTable ? new Handsontable(trendDataTable, {
     licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
+    theme: "ht-theme-classic",
     data: state.trendData,
     dataSchema: { x: null, value: null },
     columns: [
@@ -1604,6 +1605,8 @@ function initialiseHandsOnTable() {
   }) : undefined;
 
   seasonalFactorsHot = seasonalFactorsDataTable ? new Handsontable(seasonalFactorsDataTable, {
+    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
+    theme: "ht-theme-classic",
     colHeaders: ["Seasonal Factors"],
     data: state.seasonalFactorTableData,
     rowHeaders: true,
@@ -1645,10 +1648,11 @@ function initialiseHandsOnTable() {
       }
       return cellProperties;
     },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
   }) : undefined;
 
   deseasonaliseHot = deseasonaliseDataTable ? new Handsontable(deseasonaliseDataTable, {
+    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
+    theme: "ht-theme-classic",
     data: state.seasonalFactorData,
     dataSchema: { x: null, value: null },
     columns: [
@@ -1735,10 +1739,11 @@ function initialiseHandsOnTable() {
 
       return cellProperties;
     },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
   }) : undefined;
 
   lockedLimitHot = lockedLimitDataTable ? new Handsontable(lockedLimitDataTable, {
+    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
+    theme: "ht-theme-classic",
     data: state.lockedLimitBaseData,
     dataSchema: { x: null, value: null },
     columns: [
@@ -1793,10 +1798,11 @@ function initialiseHandsOnTable() {
       errorMsg.classList.remove("hidden");
       return false;
     },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
   }) : undefined;
 
   hot = new Handsontable(table, {
+    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
+    theme: "ht-theme-classic",
     data: state.tableData,
     dataSchema: { x: null, value: null },
     columns: [
@@ -1891,7 +1897,6 @@ function initialiseHandsOnTable() {
       errorMsg.classList.remove("hidden");
       return false;
     },
-    licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
   });
 }
 
