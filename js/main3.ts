@@ -1,3 +1,6 @@
+import Alpine from "alpinejs";
+import "handsontable/styles/handsontable.min.css";
+import "handsontable/styles/ht-theme-main.min.css";
 import chroma from "chroma-js";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -12,6 +15,8 @@ import Handsontable from "handsontable";
 import { CellMeta } from "handsontable/settings";
 
 import lz77 from "./lz77";
+
+Alpine.start();
 
 
 /** 
@@ -661,8 +666,11 @@ function createTrendlines(
   let reducedUnpl: DataValue[] = [];
   let reducedLnpl: DataValue[] = [];
 
+  let validXData = removeAllNulls(state.xdata)
+
   dataValues.forEach((d, i) => {
-    const centreLineValue = i * m + c;
+    let x = normalizeDateForLinearRegression(validXData, d.x);
+    const centreLineValue = x * m + c;
     const unplValue = centreLineValue + avgMR * NPL_SCALING;
     const lnplValue = centreLineValue - avgMR * NPL_SCALING;
     const lowerQtlValue = (lnplValue + centreLineValue) / 2;
@@ -699,6 +707,18 @@ function createTrendlines(
   };
 }
 
+function normalizeDateForLinearRegression(validXData: DataValue[], date): number {
+  if (validXData.length < 2) {
+    console.error(
+      "At least two data points are required for linear regression."
+    );
+    return null;
+  }
+  let firstData = fromDateStr(validXData[0].x)
+  let base = fromDateStr(validXData[1].x) - firstData;
+  return (fromDateStr(date) - firstData) / base;
+}
+
 function linearRegression(yValues: DataValue[]): { m: number; c: number } | null {
   if (yValues.length < 2) {
     console.error(
@@ -709,11 +729,9 @@ function linearRegression(yValues: DataValue[]): { m: number; c: number } | null
 
   // normalize data
   let validXData = removeAllNulls(state.xdata)
-  let firstData = fromDateStr(validXData[0].x)
-  let base = fromDateStr(validXData[1].x) - firstData;
   let normalizedValue: { x: number, y: number }[] = yValues.map(d => {
     return {
-      x: (fromDateStr(d.x) - firstData) / base,
+      x: normalizeDateForLinearRegression(validXData, d.x),
       y: d.value,
     }
   })
@@ -1823,6 +1841,10 @@ function initialiseHandsOnTable() {
       state.xLabel ?? "Date",
       state.yLabel === "Value" ? "Value (✏️)" : state.yLabel,
     ],
+    afterInit: function () {
+      let xOnly = state.tableData.map((d) => d.x);
+      checkDuplicatesInTable(xOnly, this);
+    },
     // Editable column header: https://github.com/handsontable/handsontable/issues/1980
     afterOnCellMouseDown: function (e, coords) {
       if (coords.row !== -1) {
@@ -1864,7 +1886,7 @@ function initialiseHandsOnTable() {
       return beforePasteTable(data, coords);
     },
     beforeChange(changes, source) {
-      let xOnly = state.xdata.map((d) => d.x);
+      let xOnly = state.tableData.map((d) => d.x);
       changes.forEach(([row, prop, oldVal, newVal], idx) => {
         if (prop == "x") {
           xOnly[row] = newVal;
@@ -2674,9 +2696,11 @@ function checkDuplicatesInTable(arr: string[], tableInstance) {
     if (!el) return; // null or ""
     if (el in seen) {
       tableInstance.setCellMeta(idx, 0, "className", "duplicate");
+      tableInstance.setCellMeta(idx, 1, "className", "duplicate");
       isDuplicateDetected = true;
     } else {
       tableInstance.setCellMeta(idx, 0, "className", "");
+      tableInstance.setCellMeta(idx, 1, "className", "");
     }
     seen[el] = true;
   });
@@ -2737,7 +2761,7 @@ function renderCharts(cause: string = "init") {
   // setup initial data
   updateInPlace(
     state.xdata,
-    state.tableData.filter((dv) => dv.x && (dv.value || dv.value == 0))
+    sortDataValues(state.tableData.filter((dv) => dv.x && (dv.value || dv.value == 0)))
   );
   updateInPlace(state.movements, getMovements(state.xdata));
 
@@ -2954,15 +2978,25 @@ function adjustChartAxis(stats: _Stats) {
 
   const [xplotYMin, xplotYMax] = getXChartYAxisMinMax(stats);
 
+  let xAxisFormatter = ECHARTS_DATE_FORMAT
+  let periodicity = determinePeriodicity(state.xdata);
+  if (dayjs(xMax).diff(dayjs(xMin), 'month') >= 12) {
+    if (periodicity == "month" || periodicity == "quarter" || periodicity == "year") {
+      xAxisFormatter = '{MMM} {yyyy}'
+    } else {
+      xAxisFormatter = '{d} {MMM} {yy}'
+    }
+  }
+
   xplot.setOption({
     yAxis: {
       min: xplotYMin,
       max: xplotYMax,
     },
-    xAxis: { min: xMin, max: xMax },
+    xAxis: { min: xMin, max: xMax, axisLabel: { formatter: xAxisFormatter } },
   });
   mrplot.setOption({
-    xAxis: { min: xMin, max: xMax },
+    xAxis: { min: xMin, max: xMax, axisLabel: { formatter: xAxisFormatter } },
     yAxis: { min: 0, max: stats.mrchartMax },
   });
 }
@@ -3132,7 +3166,7 @@ const chartBaseOptions = {
   xAxis: {
     type: "time",
     axisLabel: {
-      formatter: ECHARTS_DATE_FORMAT,
+      formatter: ECHARTS_DATE_FORMAT, // default format
       hideOverlap: true,
       color: "#000",
     },
@@ -3425,7 +3459,7 @@ async function decodeShareLink(
   };
 }
 
-async function exportCanvasWithBackground(id: string) {  
+async function exportCanvasWithBackground(id: string) {
   // Get the source canvas
   const container = document.getElementById(id);
   if (!container) return;
@@ -3443,7 +3477,7 @@ async function exportCanvasWithBackground(id: string) {
   // Load and draw background image
   const bgImage = new Image();
   bgImage.src = '/xmrit-bg.png';
-  
+
   try {
     await new globalThis.Promise((resolve, reject) => {
       bgImage.onload = resolve;
@@ -3452,7 +3486,7 @@ async function exportCanvasWithBackground(id: string) {
 
     // Draw background (scaled to fit)
     ctx.drawImage(bgImage, 0, 0, finalCanvas.width, finalCanvas.height);
-    
+
     // Draw the original canvas content
     ctx.drawImage(sourceCanvas, 0, 0);
     // Convert to PNG and download
