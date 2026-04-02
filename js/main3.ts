@@ -3390,7 +3390,7 @@ async function decodeShareLink(
     d = decodeURIComponent(d);
     dividers = decodeURIComponent(dividers);
     let [datePart, valuePart] = d.split(".", 2);
-    let dateText = lz77.decompress(atobUrlSafe(datePart));
+    let dateText = binaryStringToUtf8(lz77.decompress(atobUrlSafe(datePart)));
     let values = decodeNumberArrayString(valuePart);
     // hack[1]: reverse the , -> ; encoding
     let dates = dateText.split(",").map((d) => d.replace(";", ","));
@@ -3546,6 +3546,13 @@ function round(n: number, decimal_point: number = DECIMAL_POINT): number {
 
 function atobUrlSafe(s: string) {
   return atob(s.replace(/-/g, "+").replace(/_/g, "/"));
+}
+
+/** Decode a binary string (each char = byte 0–255) as UTF-8. LZ77 decompress returns raw bytes; labels are UTF-8. */
+function binaryStringToUtf8(binaryStr: string): string {
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
 function btoaUrlSafe(s: string) {
