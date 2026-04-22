@@ -936,11 +936,13 @@ function renderLimitLines(stats: _Stats) {
       name,
       lineStyle,
       statisticY,
+      tooltipLabel,
       showLabel = false,
     }: {
       name: string;
       lineStyle: any;
       statisticY: number;
+      tooltipLabel: string;
       showLabel?: boolean;
     }) => ({
       name: name,
@@ -950,7 +952,7 @@ function renderLimitLines(stats: _Stats) {
         lineStyle,
         tooltip: {
           show: true,
-          formatter: `${statisticY}`,
+          formatter: `${tooltipLabel}: ${statisticY}`,
           textStyle: {
             fontWeight: "bold",
           },
@@ -991,6 +993,7 @@ function renderLimitLines(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.avgMovement ?? 0,
+        tooltipLabel: "Avg Movement",
         showLabel: isLastSegment,
       }),
       createHorizontalLimitLineSeries({
@@ -1001,6 +1004,7 @@ function renderLimitLines(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.URL ?? 0,
+        tooltipLabel: "Upper Movement Limit",
         showLabel: isLastSegment,
       }),
     ]);
@@ -1025,6 +1029,7 @@ function renderLimitLines(stats: _Stats) {
           width: 1,
         },
         statisticY: lv.lowerQuartile ?? 0,
+        tooltipLabel: "Lower Halfway",
       }),
       options.useUpperQuartile &&
       createHorizontalLimitLineSeries({
@@ -1036,6 +1041,7 @@ function renderLimitLines(stats: _Stats) {
           width: 1,
         },
         statisticY: lv.upperQuartile ?? 0,
+        tooltipLabel: "Upper Halfway",
       }),
       createHorizontalLimitLineSeries({
         name: `${i}-avg`,
@@ -1045,6 +1051,7 @@ function renderLimitLines(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.avgX ?? 0,
+        tooltipLabel: "Avg X",
         showLabel: isLastSegment,
       }),
       createHorizontalLimitLineSeries({
@@ -1055,6 +1062,7 @@ function renderLimitLines(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.UNPL ?? 0,
+        tooltipLabel: "Upper X limit (UNPL)",
         showLabel: isLastSegment,
       }),
       createHorizontalLimitLineSeries({
@@ -1065,6 +1073,7 @@ function renderLimitLines(stats: _Stats) {
           type: lineType,
         },
         statisticY: lv.LNPL ?? 0,
+        tooltipLabel: "Lower X limit (LNPL)",
         showLabel: isLastSegment,
       }),
     ]);
